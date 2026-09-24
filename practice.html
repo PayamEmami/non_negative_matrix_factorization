@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>2&nbsp; A practical NMF workflow – Non-negative Matrix Factorization (NMF)</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./mathematics.html" rel="next">
+<link href="./intuition.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6d144699ee5a3f285c99b12d480471d8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./practice.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Non-negative Matrix Factorization (NMF)</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intuition.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./practice.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mathematics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./exercises.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#start-with-the-observed-matrix" id="toc-start-with-the-observed-matrix" class="nav-link active" data-scroll-target="#start-with-the-observed-matrix"><span class="header-section-number">2.1</span> Start with the observed matrix</a></li>
+  <li><a href="#fit-one-provisional-model" id="toc-fit-one-provisional-model" class="nav-link" data-scroll-target="#fit-one-provisional-model"><span class="header-section-number">2.2</span> Fit one provisional model</a></li>
+  <li><a href="#part-1-read-h-first" id="toc-part-1-read-h-first" class="nav-link" data-scroll-target="#part-1-read-h-first"><span class="header-section-number">2.3</span> Part 1: Read <span class="math inline">\(H\)</span> first</a>
+  <ul class="collapse">
+  <li><a href="#rank-the-defining-features" id="toc-rank-the-defining-features" class="nav-link" data-scroll-target="#rank-the-defining-features"><span class="header-section-number">2.3.1</span> Rank the defining features</a></li>
+  <li><a href="#magnitude-is-not-the-same-as-specificity" id="toc-magnitude-is-not-the-same-as-specificity" class="nav-link" data-scroll-target="#magnitude-is-not-the-same-as-specificity"><span class="header-section-number">2.3.2</span> Magnitude is not the same as specificity</a></li>
+  </ul></li>
+  <li><a href="#part-2-read-w" id="toc-part-2-read-w" class="nav-link" data-scroll-target="#part-2-read-w"><span class="header-section-number">2.4</span> Part 2: Read <span class="math inline">\(W\)</span></a>
+  <ul class="collapse">
+  <li><a href="#plot-samples-in-component-space" id="toc-plot-samples-in-component-space" class="nav-link" data-scroll-target="#plot-samples-in-component-space"><span class="header-section-number">2.4.1</span> Plot samples in component space</a></li>
+  </ul></li>
+  <li><a href="#sec-scaling" id="toc-sec-scaling" class="nav-link" data-scroll-target="#sec-scaling"><span class="header-section-number">2.5</span> Part 3: Put components on a comparable scale</a>
+  <ul class="collapse">
+  <li><a href="#compare-a-few-fitted-mixtures" id="toc-compare-a-few-fitted-mixtures" class="nav-link" data-scroll-target="#compare-a-few-fitted-mixtures"><span class="header-section-number">2.5.1</span> Compare a few fitted mixtures</a></li>
+  <li><a href="#return-to-feature-specificity" id="toc-return-to-feature-specificity" class="nav-link" data-scroll-target="#return-to-feature-specificity"><span class="header-section-number">2.5.2</span> Return to feature specificity</a></li>
+  </ul></li>
+  <li><a href="#part-4-reconstruct-one-sample-by-hand" id="toc-part-4-reconstruct-one-sample-by-hand" class="nav-link" data-scroll-target="#part-4-reconstruct-one-sample-by-hand"><span class="header-section-number">2.6</span> Part 4: Reconstruct one sample by hand</a></li>
+  <li><a href="#part-5-reconstruct-the-whole-dataset" id="toc-part-5-reconstruct-the-whole-dataset" class="nav-link" data-scroll-target="#part-5-reconstruct-the-whole-dataset"><span class="header-section-number">2.7</span> Part 5: Reconstruct the whole dataset</a></li>
+  <li><a href="#part-6-use-w-for-sample-structure" id="toc-part-6-use-w-for-sample-structure" class="nav-link" data-scroll-target="#part-6-use-w-for-sample-structure"><span class="header-section-number">2.8</span> Part 6: Use <span class="math inline">\(W\)</span> for sample structure</a></li>
+  <li><a href="#part-7-connect-sample-structure-back-to-features" id="toc-part-7-connect-sample-structure-back-to-features" class="nav-link" data-scroll-target="#part-7-connect-sample-structure-back-to-features"><span class="header-section-number">2.9</span> Part 7: Connect sample structure back to features</a></li>
+  <li><a href="#part-8-choose-k" id="toc-part-8-choose-k" class="nav-link" data-scroll-target="#part-8-choose-k"><span class="header-section-number">2.10</span> Part 8: Choose <span class="math inline">\(k\)</span></a>
+  <ul class="collapse">
+  <li><a href="#reconstruction-error" id="toc-reconstruction-error" class="nav-link" data-scroll-target="#reconstruction-error"><span class="header-section-number">2.10.1</span> Reconstruction error</a></li>
+  <li><a href="#repeated-run-stability" id="toc-repeated-run-stability" class="nav-link" data-scroll-target="#repeated-run-stability"><span class="header-section-number">2.10.2</span> Repeated-run stability</a></li>
+  <li><a href="#consensus-nmf-and-cophenetic-correlation" id="toc-consensus-nmf-and-cophenetic-correlation" class="nav-link" data-scroll-target="#consensus-nmf-and-cophenetic-correlation"><span class="header-section-number">2.10.3</span> Consensus NMF and cophenetic correlation</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Suppose someone gives you a non-negative data matrix. What do you do with it?</p>
+<p>This chapter follows the workflow we would use for a real analysis: check the matrix, fit one provisional NMF model, read its two fitted factors, reconstruct observations, inspect what the model missed, and only then consider other ranks. The dataset is simulated so that it has clear structure, but nothing in the analysis below depends on knowing how it was generated.</p>
+<p>In R we use <code>NNLM::nnmf()</code> for the main fit and the <code>NMF</code> package for a consensus rank survey. In Python we use <code>sklearn.decomposition.NMF</code>. Both main fits use fast coordinate-descent solvers. The classical multiplicative updates belong in the <a href="./mathematics.html">mathematics chapter</a>, not as a requirement for routine use.</p>
+<section id="start-with-the-observed-matrix" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="start-with-the-observed-matrix"><span class="header-section-number">2.1</span> Start with the observed matrix</h2>
+<p>Download these three files and keep them in a folder named <code>data</code>:</p>
+<ul>
+<li><a href="data/X_simulated.csv" download="X_simulated.csv">Observed matrix</a></li>
+<li><a href="data/sample_metadata.csv" download="sample_metadata.csv">Sample metadata</a></li>
+<li><a href="data/feature_metadata.csv" download="feature_metadata.csv">Feature metadata</a></li>
+</ul>
+<p>The observed matrix is stored with <strong>samples in rows</strong> and <strong>features in columns</strong>. Load it and verify that the metadata IDs are in the same order before attaching labels or colours to a plot.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">read.csv</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/X_simulated.csv"</span>, <span class="at">row.names =</span> <span class="dv">1</span>, <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/sample_metadata.csv"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>feature_meta <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/feature_metadata.csv"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(X)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">range</span>(X)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">anyNA</span>(X)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(X <span class="sc">&lt;</span> <span class="dv">0</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">identical</span>(<span class="fu">rownames</span>(X), meta<span class="sc">$</span>sample_id),</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">identical</span>(<span class="fu">colnames</span>(X), feature_meta<span class="sc">$</span>feature_id)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[1] 180  60
+[1]  0 53
+[1] FALSE
+[1] FALSE</code></pre>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>X_df <span class="op">=</span> pd.read_csv(<span class="st">"data/X_simulated.csv"</span>, index_col<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>meta <span class="op">=</span> pd.read_csv(<span class="st">"data/sample_metadata.csv"</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>feature_meta <span class="op">=</span> pd.read_csv(<span class="st">"data/feature_metadata.csv"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> X_df.to_numpy()</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(X.shape)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(X.<span class="bu">min</span>(), X.<span class="bu">max</span>())</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.isnan(X).<span class="bu">any</span>())</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>((X <span class="op">&lt;</span> <span class="dv">0</span>).<span class="bu">any</span>())</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> X_df.index.tolist() <span class="op">==</span> meta[<span class="st">"sample_id"</span>].tolist()</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> X_df.columns.tolist() <span class="op">==</span> feature_meta[<span class="st">"feature_id"</span>].tolist()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>(180, 60)
+0.0 53.0
+False
+False</code></pre>
+</div>
+</div>
+</div>
+<p>These four checks answer different questions:</p>
+<ul>
+<li><code>dim(X)</code> or <code>X.shape</code> confirms the orientation and establishes <span class="math inline">\(n=180\)</span> samples and <span class="math inline">\(p=60\)</span> features.</li>
+<li><code>range(X)</code> checks the observed scale and can expose impossible or miscoded values.</li>
+<li><code>anyNA(X)</code> or <code>np.isnan(X).any()</code> catches missing values. Most NMF implementations do not silently solve the missing-data problem, so missingness needs an explicit plan.</li>
+<li><code>any(X &lt; 0)</code> checks the defining input constraint. Ordinary NMF requires non-negative input. Centring this matrix would generally violate it.</li>
+</ul>
+</section>
+<section id="fit-one-provisional-model" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="fit-one-provisional-model"><span class="header-section-number">2.2</span> Fit one provisional model</h2>
+<p>Begin with one model at provisional rank</p>
+<p><span class="math display">\[
+k=3.
+\]</span></p>
+<p>This is not yet an argument that three is the correct rank. First we need to understand what a single fitted model gives us.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(NNLM)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> NNLM<span class="sc">::</span><span class="fu">nnmf</span>(</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  X,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">3</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"scd"</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">max.iter =</span> <span class="dv">2000</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">rel.tol =</span> <span class="fl">1e-8</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="dv">0</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>W <span class="ot">&lt;-</span> fit<span class="sc">$</span>W</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>H <span class="ot">&lt;-</span> fit<span class="sc">$</span>H</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(W)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(H)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[1] 180   3
+[1]  3 60</code></pre>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> NMF</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> NMF(</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    n_components<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    init<span class="op">=</span><span class="st">"nndsvda"</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    solver<span class="op">=</span><span class="st">"cd"</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    beta_loss<span class="op">=</span><span class="st">"frobenius"</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span><span class="dv">2000</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    tol<span class="op">=</span><span class="fl">1e-6</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>W <span class="op">=</span> model.fit_transform(X)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>H <span class="op">=</span> model.components_</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(W.shape)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(H.shape)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>(180, 3)
+(3, 60)</code></pre>
+</div>
+</div>
+</div>
+<p>The dimensions encode the two questions we will ask throughout the chapter:</p>
+<p><span class="math display">\[
+W\in\mathbb R_{\geq0}^{n\times k},\qquad
+H\in\mathbb R_{\geq0}^{k\times p}.
+\]</span></p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Keep the two fitted matrices straight
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>H = what the components look like over the features.</strong></li>
+<li><strong>W = the component coefficients for the samples.</strong></li>
+</ul>
+</div>
+</div>
+<p>Component numbers are arbitrary labels, not an importance ranking. We keep the order returned by each solver and add names only to make tables and plots readable.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(W) <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"Component"</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(H) <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"Component"</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>component_names <span class="op">=</span> [<span class="st">"Component 1"</span>, <span class="st">"Component 2"</span>, <span class="st">"Component 3"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<p>The static figures below use the Python fit. Running the R path produces the same kind of analysis, although non-convex NMF fits need not return identical numbers or component order.</p>
+</section>
+<section id="part-1-read-h-first" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="part-1-read-h-first"><span class="header-section-number">2.3</span> Part 1: Read <span class="math inline">\(H\)</span> first</h2>
+<p>Each row of <span class="math inline">\(H\)</span> is a fitted profile over the 60 features. A heatmap gives the quickest overview.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>H_relative <span class="ot">&lt;-</span> <span class="fu">sweep</span>(H, <span class="dv">1</span>, <span class="fu">apply</span>(H, <span class="dv">1</span>, max), <span class="st">"/"</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">image</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">seq_len</span>(<span class="fu">ncol</span>(H_relative)),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(H_relative)),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">z =</span> <span class="fu">t</span>(H_relative),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">xlab =</span> <span class="st">"Feature"</span>, <span class="at">ylab =</span> <span class="st">"Component"</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">40</span>, <span class="st">"Blues 3"</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>H_relative <span class="op">=</span> H <span class="op">/</span> H.<span class="bu">max</span>(axis<span class="op">=</span><span class="dv">1</span>, keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="fl">2.7</span>))</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>image <span class="op">=</span> ax.imshow(H_relative, aspect<span class="op">=</span><span class="st">"auto"</span>, cmap<span class="op">=</span><span class="st">"Blues"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                  vmin<span class="op">=</span><span class="dv">0</span>, vmax<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Feature"</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Component"</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>ax.set_yticks(<span class="bu">range</span>(<span class="dv">3</span>), component_names)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>fig.colorbar(image, ax<span class="op">=</span>ax, label<span class="op">=</span><span class="st">"Within-component relative weight"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-practice-H" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A three-row heatmap of within-component relative feature weights across 60 features. Each component is strongest across a different feature region, with some overlap between profiles.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-H-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/09-fitted-H-heatmap.svg" class="img-fluid figure-img" alt="A three-row heatmap of within-component relative feature weights across 60 features. Each component is strongest across a different feature region, with some overlap between profiles.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-H-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.1: The fitted H matrix, with three components in rows and 60 features in columns. Each row is divided by its maximum for display, revealing a different region of high feature weights and some overlap between profiles.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>The row-wise display scaling makes every profile visible and does not change any within-row ranking. It does mean that colour intensity should not be compared across components. The scale-aware cross-component comparison comes later.</p>
+<p>The entry</p>
+<p><span class="math display">\[
+H_{rj}
+\]</span></p>
+<p>is the fitted weight of feature <span class="math inline">\(j\)</span> in component <span class="math inline">\(r\)</span>. A large value means that the feature contributes strongly to that component profile. The colour scale is useful for structure, but a ranked list is better for identifying exact features.</p>
+<section id="rank-the-defining-features" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="rank-the-defining-features"><span class="header-section-number">2.3.1</span> Rank the defining features</h3>
+<p>Start with Component 1, then repeat the same operation for every row of <span class="math inline">\(H\)</span>.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>component_1 <span class="ot">&lt;-</span> <span class="fu">sort</span>(H[<span class="dv">1</span>, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(component_1, <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>feature_44 feature_31 feature_24 feature_40 feature_45 feature_41 feature_32
+0.02033296 0.02003490 0.01948908 0.01854064 0.01844298 0.01814453 0.01811311
+feature_36 feature_35 feature_34 feature_43 feature_22
+0.01751294 0.01720727 0.01713666 0.01666278 0.01664310</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>top_by_component <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="cf">function</span>(r) {</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sort</span>(H[r, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>]</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>old_par <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  top <span class="ot">&lt;-</span> <span class="fu">rev</span>(top_by_component[[r]])</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">barplot</span>(</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    top, <span class="at">horiz =</span> <span class="cn">TRUE</span>, <span class="at">las =</span> <span class="dv">1</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> <span class="fu">paste</span>(<span class="st">"Component"</span>, r), <span class="at">xlab =</span> <span class="st">"Weight in H"</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(old_par)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>component_1 <span class="op">=</span> pd.Series(H[<span class="dv">0</span>], index<span class="op">=</span>X_df.columns)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(component_1.sort_values(ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">12</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>feature_44    42.216516
+feature_31    41.654514
+feature_24    40.521195
+feature_40    38.546488
+feature_45    38.303736
+feature_41    37.672746
+feature_32    37.658315
+feature_36    36.409935
+feature_35    35.774613
+feature_34    35.631275
+feature_22    34.603957
+feature_43    34.600021
+dtype: float64</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">13</span>, <span class="dv">5</span>))</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, ax <span class="kw">in</span> <span class="bu">enumerate</span>(axes):</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    top <span class="op">=</span> pd.Series(H[r], index<span class="op">=</span>X_df.columns).nlargest(<span class="dv">12</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    top.sort_values().plot.barh(ax<span class="op">=</span>ax)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="ss">f"Component </span><span class="sc">{</span>r <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"Weight in H"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<p>Notice that R’s weights sit around 0.02 while Python’s sit around 40. Neither number is wrong. The two solvers landed on different scalings of the same underlying factorization, and Part 3 explains exactly why that is allowed to happen.</p>
+<p>At this point we have used only the fitted weights. Now join the feature annotations and ask whether the high-weight features form a coherent known group.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-6-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-1" role="tab" aria-controls="tabset-6-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-6-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-2" role="tab" aria-controls="tabset-6-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-6-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-6-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  feature_ids <span class="ot">&lt;-</span> <span class="fu">names</span>(top_by_component[[r]])</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  annotation <span class="ot">&lt;-</span> feature_meta<span class="sc">$</span>primary_component[</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">match</span>(feature_ids, feature_meta<span class="sc">$</span>feature_id)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"Component"</span>, r, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">table</span>(annotation))</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>Component 1
+annotation
+Component 2 Component 3
+         11           1
+Component 2
+annotation
+Component 1 Component 2
+         11           1
+Component 3
+annotation
+Component 2 Component 3
+          1          11</code></pre>
+</div>
+<div id="tabset-6-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-6-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>annotation <span class="op">=</span> feature_meta.set_index(<span class="st">"feature_id"</span>)[<span class="st">"primary_component"</span>]</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>):</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    top_ids <span class="op">=</span> pd.Series(H[r], index<span class="op">=</span>X_df.columns).nlargest(<span class="dv">12</span>).index</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Component </span><span class="sc">{</span>r <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(annotation.loc[top_ids].value_counts())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>Component 1
+primary_component
+Component 2    11
+Component 3     1
+Name: count, dtype: int64
+Component 2
+primary_component
+Component 1    11
+Component 2     1
+Name: count, dtype: int64
+Component 3
+primary_component
+Component 3    11
+Component 2     1
+Name: count, dtype: int64</code></pre>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-practice-top-features" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three horizontal bar charts show the 12 highest-weighted features in Components 1, 2, and 3. Most bars within each panel share an annotation colour, with one or two bars from an overlapping family.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-top-features-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/10-top-features.svg" class="img-fluid figure-img" alt="Three horizontal bar charts show the 12 highest-weighted features in Components 1, 2, and 3. Most bars within each panel share an annotation colour, with one or two bars from an overlapping family.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-top-features-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.2: The 12 highest-weighted features for each fitted component. Bar colour shows the provided feature family, revealed only after ranking the fitted weights. Most top features within a fitted component share one annotation, with a small amount of overlap.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Here the annotations have generic names because this is a simulated dataset. In a biological analysis they might be cell-type markers, pathway membership, or functional categories. The logic is the same: NMF supplies a weighted feature profile, and the analyst gives that profile a tentative interpretation from its high-weight features. NMF does not itself label a component “immune”, “proliferation”, or “metabolic”.</p>
+</section>
+<section id="magnitude-is-not-the-same-as-specificity" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="magnitude-is-not-the-same-as-specificity"><span class="header-section-number">2.3.2</span> Magnitude is not the same as specificity</h3>
+<p>Suppose two features have these weights across three components:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th style="text-align: right;">Component 1</th>
+<th style="text-align: right;">Component 2</th>
+<th style="text-align: right;">Component 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">0.02</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">0.85</td>
+<td style="text-align: right;">0.80</td>
+</tr>
+</tbody>
+</table>
+<p>Feature A is both large and specific to Component 1. Feature B is large in Component 1 but nearly as large everywhere, so it does less to distinguish that component.</p>
+<p>There is one important catch: comparing a fitted feature <strong>across rows of <span class="math inline">\(H\)</span></strong> is itself affected by NMF’s scaling ambiguity. Top-feature ranking within one row is safe because multiplying the entire row by a positive constant does not change its order. We will compute fitted feature specificity only after putting all component profiles on a common scale in <a href="#sec-scaling" class="quarto-xref"><span>Section 2.5</span></a>.</p>
+<p>If explicit sparsity or feature selection is the goal, use a sparse-NMF formulation or another feature-selection method. Ordinary NMF weights need not contain exact zeros.</p>
+</section>
+</section>
+<section id="part-2-read-w" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="part-2-read-w"><span class="header-section-number">2.4</span> Part 2: Read <span class="math inline">\(W\)</span></h2>
+<p>Now turn to the sample coefficients. Naming the rows and columns makes their orientation explicit.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-7-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-1" role="tab" aria-controls="tabset-7-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-7-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-2" role="tab" aria-controls="tabset-7-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-7-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-7-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(W) <span class="ot">&lt;-</span> <span class="fu">rownames</span>(X)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(W) <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"Component"</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">head</span>(W), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>           Component 1 Component 2 Component 3
+sample_001     195.568     274.575    1130.722
+sample_002     239.065     325.294    1732.391
+sample_003    1749.800      60.560     214.945
+sample_004      59.314      50.236    1707.171
+sample_005     120.107    1651.563     338.488
+sample_006     232.709    1514.998     365.896</code></pre>
+</div>
+<div id="tabset-7-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-7-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>W_df <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    W,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span>X_df.index,</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    columns<span class="op">=</span>component_names,</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(W_df.head().<span class="bu">round</span>(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>            Component 1  Component 2  Component 3
+sample_id
+sample_001        0.090        0.090        0.932
+sample_002        0.109        0.103        1.427
+sample_003        0.841        0.020        0.179
+sample_004        0.022        0.000        1.407
+sample_005        0.057        0.613        0.274</code></pre>
+</div>
+</div>
+</div>
+<p>Conceptually, the first rows look like this:</p>
+<p><span class="math display">\[
+W=
+\begin{array}{c|ccc}
+&amp;C1&amp;C2&amp;C3\\
+\hline
+\text{sample\_001}&amp;\cdots&amp;\cdots&amp;\cdots\\
+\text{sample\_002}&amp;\cdots&amp;\cdots&amp;\cdots\\
+\text{sample\_003}&amp;\cdots&amp;\cdots&amp;\cdots
+\end{array}.
+\]</span></p>
+<p>Every row is one sample in a three-dimensional NMF space. Within a single column, a higher coefficient means that the corresponding profile in <span class="math inline">\(H\)</span> is used more strongly for that sample.</p>
+<section id="plot-samples-in-component-space" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="plot-samples-in-component-space"><span class="header-section-number">2.4.1</span> Plot samples in component space</h3>
+<p>The sample metadata can now be used to colour a score plot.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-8-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-8-1" role="tab" aria-controls="tabset-8-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-8-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-8-2" role="tab" aria-controls="tabset-8-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-8-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-8-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>group_colours <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Component 1 dominant"</span> <span class="ot">=</span> <span class="st">"#7A3E9D"</span>,</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Component 2 dominant"</span> <span class="ot">=</span> <span class="st">"#C49A00"</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Component 3 dominant"</span> <span class="ot">=</span> <span class="st">"#008C95"</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mixed"</span> <span class="ot">=</span> <span class="st">"#999999"</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>point_colours <span class="ot">&lt;-</span> group_colours[meta<span class="sc">$</span>group]</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>old_par <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(W[, <span class="dv">1</span>], W[, <span class="dv">2</span>], <span class="at">col =</span> point_colours, <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"W Component 1"</span>, <span class="at">ylab =</span> <span class="st">"W Component 2"</span>)</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">names</span>(group_colours), <span class="at">col =</span> group_colours,</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">bty =</span> <span class="st">"n"</span>, <span class="at">cex =</span> <span class="fl">0.7</span>)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(W[, <span class="dv">1</span>], W[, <span class="dv">3</span>], <span class="at">col =</span> point_colours, <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"W Component 1"</span>, <span class="at">ylab =</span> <span class="st">"W Component 3"</span>)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(old_par)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-8-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-8-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>group_colours <span class="op">=</span> {</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Component 1 dominant"</span>: <span class="st">"#7A3E9D"</span>,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Component 2 dominant"</span>: <span class="st">"#C49A00"</span>,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Component 3 dominant"</span>: <span class="st">"#008C95"</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Mixed"</span>: <span class="st">"#999999"</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="fl">4.5</span>))</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, (x_col, y_col) <span class="kw">in</span> <span class="bu">zip</span>(axes, [(<span class="dv">0</span>, <span class="dv">1</span>), (<span class="dv">0</span>, <span class="dv">2</span>)]):</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> group, colour <span class="kw">in</span> group_colours.items():</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>        keep <span class="op">=</span> meta[<span class="st">"group"</span>].eq(group).to_numpy()</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>        ax.scatter(W[keep, x_col], W[keep, y_col],</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>                   color<span class="op">=</span>colour, alpha<span class="op">=</span><span class="fl">0.7</span>, label<span class="op">=</span>group)</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="ss">f"W Component </span><span class="sc">{</span>x_col <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="ss">f"W Component </span><span class="sc">{</span>y_col <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-practice-scores" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two NMF score scatter plots coloured by four sample-metadata groups. Different labelled groups extend along different fitted component axes, while mixed samples occupy intermediate positions.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-scores-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/11-nmf-score-plots.svg" class="img-fluid figure-img" alt="Two NMF score scatter plots coloured by four sample-metadata groups. Different labelled groups extend along different fitted component axes, while mixed samples occupy intermediate positions.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-scores-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.3: Two views of the fitted sample coefficients. The left panel plots W Component 1 against Component 2, the right plots Component 1 against Component 3. Point colours encode sample-metadata groups, not fitted component numbers.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Separation along <span class="math inline">\(W_1\)</span> means that samples differ in the coefficient multiplying row 1 of <span class="math inline">\(H\)</span>. If inspection of that row suggested an immune-related profile, then separation along <span class="math inline">\(W_1\)</span> would mean differing fitted strength of that profile. It would not mean that Component 1 is the “most important” component.</p>
+<p>The two panels also prevent a common mistake. A sample near zero in the <span class="math inline">\(W_1\)</span>-versus-<span class="math inline">\(W_2\)</span> plot may have a large <span class="math inline">\(W_3\)</span>. A two-dimensional view reports only the components on its axes.</p>
+<p>It is meaningful to compare samples <strong>within one column</strong> of <span class="math inline">\(W\)</span>. Comparing the three numbers <strong>within one sample</strong>, however, requires one more step.</p>
+</section>
+</section>
+<section id="sec-scaling" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="sec-scaling"><span class="header-section-number">2.5</span> Part 3: Put components on a comparable scale</h2>
+<p>NMF has a scaling ambiguity. For any positive diagonal matrix <span class="math inline">\(D\)</span>,</p>
+<p><span class="math display">\[
+WH=(WD)(D^{-1}H).
+\]</span></p>
+<p>The same reconstruction can therefore have a large column of <span class="math inline">\(W\)</span> paired with a small row of <span class="math inline">\(H\)</span>, or the reverse. A raw calculation such as “divide one row of <span class="math inline">\(W\)</span> by its sum and call the result percentages” is not invariant to this rescaling.</p>
+<p>For interpretation, give every row of <span class="math inline">\(H\)</span> unit L1 norm. Define</p>
+<p><span class="math display">\[
+s_r=\sum_j H_{rj},
+\]</span></p>
+<p>then set</p>
+<p><span class="math display">\[
+H^*_{r\cdot}=\frac{H_{r\cdot}}{s_r},
+\qquad
+W^*_{\cdot r}=s_rW_{\cdot r}.
+\]</span></p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-9-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-9-1" role="tab" aria-controls="tabset-9-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-9-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-9-2" role="tab" aria-controls="tabset-9-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-9-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-9-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>component_scale <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(H)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(component_scale <span class="sc">&gt;</span> <span class="dv">0</span>))</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>H_star <span class="ot">&lt;-</span> <span class="fu">sweep</span>(H, <span class="dv">1</span>, component_scale, <span class="st">"/"</span>)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>W_star <span class="ot">&lt;-</span> <span class="fu">sweep</span>(W, <span class="dv">2</span>, component_scale, <span class="st">"*"</span>)</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="fu">rowSums</span>(H_star)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>Component 1 Component 2 Component 3
+          1           1           1</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">isTRUE</span>(<span class="fu">all.equal</span>(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  W <span class="sc">%*%</span> H,</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  W_star <span class="sc">%*%</span> H_star,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">tolerance =</span> <span class="fl">1e-10</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>)))</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>reconstructed_total <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(W_star)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(reconstructed_total <span class="sc">&gt;</span> <span class="dv">0</span>))</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>fractions <span class="ot">&lt;-</span> W_star <span class="sc">/</span> reconstructed_total</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-9-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-9-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>component_scale <span class="op">=</span> H.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> np.<span class="bu">any</span>(component_scale <span class="op">&lt;=</span> <span class="dv">0</span>):</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"The fit contains an empty component"</span>)</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>H_star <span class="op">=</span> H <span class="op">/</span> component_scale[:, <span class="va">None</span>]</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>W_star <span class="op">=</span> W <span class="op">*</span> component_scale[<span class="va">None</span>, :]</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(H_star.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[1. 1. 1.]</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.allclose(W <span class="op">@</span> H, W_star <span class="op">@</span> H_star)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>reconstructed_total <span class="op">=</span> W_star.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>, keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> np.<span class="bu">any</span>(reconstructed_total <span class="op">&lt;=</span> <span class="dv">0</span>):</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"At least one sample has zero reconstructed signal"</span>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>fractions <span class="op">=</span> W_star <span class="op">/</span> reconstructed_total</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<p>This changes the representation but not the reconstruction:</p>
+<p><span class="math display">\[
+W^*H^*=WH.
+\]</span></p>
+<p>Because every row of <span class="math inline">\(H^*\)</span> sums to 1,</p>
+<p><span class="math display">\[
+\sum_j W^*_{ir}H^*_{rj}=W^*_{ir}.
+\]</span></p>
+<p>Thus <span class="math inline">\(W^*_{ir}\)</span> is the total reconstructed mass contributed by component <span class="math inline">\(r\)</span> to sample <span class="math inline">\(i\)</span>, under this normalization. We can now calculate</p>
+<p><span class="math display">\[
+q_{ir}=\frac{W^*_{ir}}{\sum_s W^*_{is}}
+\]</span></p>
+<p>and interpret <span class="math inline">\(q_{ir}\)</span> as the fraction of that sample’s <strong>NMF reconstructed signal under this normalization</strong> associated with component <span class="math inline">\(r\)</span>. These are not necessarily literal biological mixture percentages.</p>
+<p>For the fitted model used in the figures, <code>sample_164</code> is deliberately informative:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Sample</th>
+<th style="text-align: right;">Component 1</th>
+<th style="text-align: right;">Component 2</th>
+<th style="text-align: right;">Component 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>sample_164</code></td>
+<td style="text-align: right;">0.368</td>
+<td style="text-align: right;">0.334</td>
+<td style="text-align: right;">0.298</td>
+</tr>
+</tbody>
+</table>
+<p>No component is negligible. A single hard label would discard most of this row.</p>
+<section id="compare-a-few-fitted-mixtures" class="level3" data-number="2.5.1">
+<h3 data-number="2.5.1" class="anchored" data-anchor-id="compare-a-few-fitted-mixtures"><span class="header-section-number">2.5.1</span> Compare a few fitted mixtures</h3>
+<p>Choose examples from the fitted fractions rather than from hidden knowledge about the data.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-10-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-1" role="tab" aria-controls="tabset-10-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-10-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-2" role="tab" aria-controls="tabset-10-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-10-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-10-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>selected_ids <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sample_080"</span>, <span class="st">"sample_180"</span>, <span class="st">"sample_004"</span>,</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sample_164"</span>, <span class="st">"sample_136"</span>, <span class="st">"sample_140"</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>selected <span class="ot">&lt;-</span> fractions[selected_ids, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(selected, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>           Component 1 Component 2 Component 3
+sample_080       0.920       0.063       0.018
+sample_180       0.000       0.914       0.086
+sample_004       0.040       0.027       0.933
+sample_164       0.371       0.341       0.288
+sample_136       0.264       0.351       0.385
+sample_140       0.360       0.476       0.164</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">t</span>(selected), <span class="at">beside =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"#4C72B0"</span>, <span class="st">"#DD8452"</span>, <span class="st">"#55A868"</span>),</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">las =</span> <span class="dv">2</span>,</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">ylab =</span> <span class="st">"Fraction of NMF reconstructed signal"</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">colnames</span>(W),</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="fu">c</span>(<span class="st">"#4C72B0"</span>, <span class="st">"#DD8452"</span>, <span class="st">"#55A868"</span>), <span class="at">bty =</span> <span class="st">"n"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-10-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-10-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>selected_ids <span class="op">=</span> [</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"sample_080"</span>, <span class="st">"sample_180"</span>, <span class="st">"sample_004"</span>,</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"sample_164"</span>, <span class="st">"sample_136"</span>, <span class="st">"sample_140"</span>,</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>selected_idx <span class="op">=</span> [X_df.index.get_loc(sample_id) <span class="cf">for</span> sample_id <span class="kw">in</span> selected_ids]</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>selected <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>    fractions[selected_idx],</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span>selected_ids,</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>    columns<span class="op">=</span>component_names,</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(selected.<span class="bu">round</span>(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>            Component 1  Component 2  Component 3
+sample_080        0.918        0.062        0.019
+sample_180        0.000        0.915        0.085
+sample_004        0.032        0.000        0.968
+sample_164        0.368        0.334        0.298
+sample_136        0.261        0.341        0.399
+sample_140        0.358        0.472        0.169</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>selected.plot.bar(stacked<span class="op">=</span><span class="va">True</span>, ylim<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>                  ylabel<span class="op">=</span><span class="st">"Fraction of NMF reconstructed signal"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-practice-contributions" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A stacked bar chart in which sample_080 is dominated by Component 1, sample_180 by Component 2, and sample_004 by Component 3. sample_164, sample_136, and sample_140 contain substantial fractions from multiple components.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-contributions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/12-normalized-contributions.svg" class="img-fluid figure-img" alt="A stacked bar chart in which sample_080 is dominated by Component 1, sample_180 by Component 2, and sample_004 by Component 3. sample_164, sample_136, and sample_140 contain substantial fractions from multiple components.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-contributions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.4: Scale-normalized fitted component fractions for six samples. The first three examples are each dominated by a different component, and the final three retain substantial contributions from multiple components.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="return-to-feature-specificity" class="level3" data-number="2.5.2">
+<h3 data-number="2.5.2" class="anchored" data-anchor-id="return-to-feature-specificity"><span class="header-section-number">2.5.2</span> Return to feature specificity</h3>
+<p>Now that the rows of <span class="math inline">\(H^*\)</span> share an L1 scale, feature weights can be compared across components. One useful descriptive quantity is a feature’s share across components:</p>
+<p><span class="math display">\[
+\operatorname{specificity}_{rj}
+=\frac{H^*_{rj}}{\sum_s H^*_{sj}}.
+\]</span></p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-11-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-11-1" role="tab" aria-controls="tabset-11-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-11-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-11-2" role="tab" aria-controls="tabset-11-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-11-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-11-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>inspect_feature <span class="ot">&lt;-</span> <span class="cf">function</span>(feature_id) {</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  magnitude <span class="ot">&lt;-</span> H_star[, feature_id]</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">component =</span> <span class="fu">rownames</span>(H_star),</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">magnitude =</span> magnitude,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">specificity =</span> magnitude <span class="sc">/</span> <span class="fu">sum</span>(magnitude)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="fu">inspect_feature</span>(<span class="st">"feature_31"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>              component   magnitude specificity
+Component 1 Component 1 0.047525399  0.91711416
+Component 2 Component 2 0.002909466  0.05614497
+Component 3 Component 3 0.001385728  0.02674087</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inspect_feature</span>(<span class="st">"feature_24"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>              component   magnitude specificity
+Component 1 Component 1 0.046230645  0.47349493
+Component 2 Component 2 0.047410101  0.48557494
+Component 3 Component 3 0.003996297  0.04093013</code></pre>
+</div>
+<div id="tabset-11-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-11-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> inspect_feature(feature_id):</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>    j <span class="op">=</span> X_df.columns.get_loc(feature_id)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>    magnitude <span class="op">=</span> H_star[:, j]</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pd.DataFrame({</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"component"</span>: component_names,</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"magnitude"</span>: magnitude,</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"specificity"</span>: magnitude <span class="op">/</span> magnitude.<span class="bu">sum</span>(),</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(inspect_feature(<span class="st">"feature_31"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>     component  magnitude  specificity
+0  Component 1   0.047581     0.909858
+1  Component 2   0.002873     0.054941
+2  Component 3   0.001841     0.035201</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(inspect_feature(<span class="st">"feature_24"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>     component  magnitude  specificity
+0  Component 1   0.046286     0.467030
+1  Component 2   0.047257     0.476825
+2  Component 3   0.005564     0.056144</code></pre>
+</div>
+</div>
+</div>
+<p><code>feature_31</code> has nearly all its normalized weight in fitted Component 1, whereas <code>feature_24</code> has similar normalized weight in Components 1 and 2. The latter is large in both profiles but is not specific to either one. Magnitude and specificity answer different questions.</p>
+</section>
+</section>
+<section id="part-4-reconstruct-one-sample-by-hand" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="part-4-reconstruct-one-sample-by-hand"><span class="header-section-number">2.6</span> Part 4: Reconstruct one sample by hand</h2>
+<p>This is the factorization made concrete. Pick the mixed <code>sample_164</code>. If its scale-adjusted coefficient row is</p>
+<p><span class="math display">\[
+W^*_{i\cdot}=[w_1,w_2,w_3],
+\]</span></p>
+<p>then its reconstruction is</p>
+<p><span class="math display">\[
+\hat x_i
+=w_1H^*_{1\cdot}
++w_2H^*_{2\cdot}
++w_3H^*_{3\cdot}.
+\]</span></p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-12-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-12-1" role="tab" aria-controls="tabset-12-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-12-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-12-2" role="tab" aria-controls="tabset-12-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-12-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-12-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="fu">match</span>(<span class="st">"sample_164"</span>, <span class="fu">rownames</span>(X))</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>contributions <span class="ot">&lt;-</span> <span class="fu">sweep</span>(H_star, <span class="dv">1</span>, W_star[i, ], <span class="st">"*"</span>)</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>x_hat_i <span class="ot">&lt;-</span> <span class="fu">colSums</span>(contributions)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">isTRUE</span>(<span class="fu">all.equal</span>(</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>(x_hat_i),</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>(W_star[i, ] <span class="sc">%*%</span> H_star)</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>)))</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>old_par <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a><span class="fu">matplot</span>(<span class="fu">t</span>(contributions), <span class="at">type =</span> <span class="st">"l"</span>, <span class="at">lty =</span> <span class="dv">1</span>,</span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"#4C72B0"</span>, <span class="st">"#DD8452"</span>, <span class="st">"#55A868"</span>),</span>
+<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab =</span> <span class="st">"Feature"</span>, <span class="at">ylab =</span> <span class="st">"Component contribution"</span>)</span>
+<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_hat_i, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(X[i, ], <span class="at">type =</span> <span class="st">"o"</span>, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.5</span>, <span class="at">col =</span> <span class="st">"grey50"</span>,</span>
+<span id="cb49-18"><a href="#cb49-18" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Feature"</span>, <span class="at">ylab =</span> <span class="st">"Value"</span>)</span>
+<span id="cb49-19"><a href="#cb49-19" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_hat_i, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb49-20"><a href="#cb49-20" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(old_par)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-12-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-12-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>i <span class="op">=</span> X_df.index.get_loc(<span class="st">"sample_164"</span>)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>contributions <span class="op">=</span> W_star[i, :, <span class="va">None</span>] <span class="op">*</span> H_star</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>x_hat_i <span class="op">=</span> contributions.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.allclose(x_hat_i, W_star[i] <span class="op">@</span> H_star)</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>, sharex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>):</span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].plot(contributions[r], label<span class="op">=</span><span class="ss">f"Component </span><span class="sc">{</span>r <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(x_hat_i, <span class="st">"k--"</span>, label<span class="op">=</span><span class="st">"sum"</span>)</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].legend()</span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].plot(X[i], <span class="st">"o-"</span>, color<span class="op">=</span><span class="st">"0.5"</span>, label<span class="op">=</span><span class="st">"observed"</span>)</span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].plot(x_hat_i, <span class="st">"k-"</span>, label<span class="op">=</span><span class="st">"reconstructed"</span>)</span>
+<span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].legend()</span>
+<span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Feature"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-practice-one-sample" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two line-chart panels. The upper panel shows three coloured component contributions across features and a dashed black sum. The lower panel overlays the smooth black reconstruction on the noisier grey observed profile.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-one-sample-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/13-one-sample-reconstruction.svg" class="img-fluid figure-img" alt="Two line-chart panels. The upper panel shows three coloured component contributions across features and a dashed black sum. The lower panel overlays the smooth black reconstruction on the noisier grey observed profile.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-one-sample-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.5: Manual reconstruction of sample_164. The upper panel shows three scaled component profiles and their sum. The lower panel compares that sum with the observed sample across all features.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Read <a href="#fig-practice-one-sample" class="quarto-xref">Figure&nbsp;<span>2.5</span></a> from top to bottom:</p>
+<ol type="1">
+<li>Each row of <span class="math inline">\(H^*\)</span> is a feature pattern.</li>
+<li>The three entries in the sample’s row of <span class="math inline">\(W^*\)</span> scale those patterns.</li>
+<li>The scaled patterns are added feature by feature.</li>
+<li>Their sum is <span class="math inline">\(\hat x_i\)</span>, the model’s approximation to the observed <span class="math inline">\(x_i\)</span>.</li>
+</ol>
+<p>The model does not choose one component for this sample. It reconstructs the sample additively from all three.</p>
+</section>
+<section id="part-5-reconstruct-the-whole-dataset" class="level2" data-number="2.7">
+<h2 data-number="2.7" class="anchored" data-anchor-id="part-5-reconstruct-the-whole-dataset"><span class="header-section-number">2.7</span> Part 5: Reconstruct the whole dataset</h2>
+<p>The same operation applies to every row at once:</p>
+<p><span class="math display">\[
+\hat X=W^*H^*=WH.
+\]</span></p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-13-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-13-1" role="tab" aria-controls="tabset-13-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-13-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-13-2" role="tab" aria-controls="tabset-13-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-13-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-13-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>X_hat <span class="ot">&lt;-</span> W_star <span class="sc">%*%</span> H_star</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>residual <span class="ot">&lt;-</span> X <span class="sc">-</span> X_hat</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>rmse <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>(residual<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">isTRUE</span>(<span class="fu">all.equal</span>(<span class="fu">rowSums</span>(X_hat), <span class="fu">rowSums</span>(W_star))))</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>dominant_for_order <span class="ot">&lt;-</span> <span class="fu">max.col</span>(fractions)</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>sample_order <span class="ot">&lt;-</span> <span class="fu">order</span>(</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>  dominant_for_order,</span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>  <span class="sc">-</span><span class="fu">apply</span>(fractions, <span class="dv">1</span>, max)</span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>value_limit <span class="ot">&lt;-</span> <span class="fu">unname</span>(<span class="fu">quantile</span>(X, <span class="fl">0.99</span>))</span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>residual_limit <span class="ot">&lt;-</span> <span class="fu">unname</span>(<span class="fu">quantile</span>(<span class="fu">abs</span>(residual), <span class="fl">0.99</span>))</span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a>draw_heatmap <span class="ot">&lt;-</span> <span class="cf">function</span>(matrix, colours, limits, title) {</span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>  ordered <span class="ot">&lt;-</span> matrix[sample_order, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">image</span>(</span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="fu">seq_len</span>(<span class="fu">ncol</span>(ordered)),</span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(ordered)),</span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">z =</span> <span class="fu">t</span>(ordered[<span class="fu">nrow</span>(ordered)<span class="sc">:</span><span class="dv">1</span>, , <span class="at">drop =</span> <span class="cn">FALSE</span>]),</span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">col =</span> colours, <span class="at">zlim =</span> limits,</span>
+<span id="cb51-22"><a href="#cb51-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">xlab =</span> <span class="st">"Feature"</span>, <span class="at">ylab =</span> <span class="st">"Sample"</span>,</span>
+<span id="cb51-23"><a href="#cb51-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> title</span>
+<span id="cb51-24"><a href="#cb51-24" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb51-25"><a href="#cb51-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb51-26"><a href="#cb51-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-27"><a href="#cb51-27" aria-hidden="true" tabindex="-1"></a>old_par <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb51-28"><a href="#cb51-28" aria-hidden="true" tabindex="-1"></a><span class="fu">draw_heatmap</span>(X, <span class="fu">hcl.colors</span>(<span class="dv">50</span>, <span class="st">"Blues 3"</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb51-29"><a href="#cb51-29" aria-hidden="true" tabindex="-1"></a>             <span class="fu">c</span>(<span class="dv">0</span>, value_limit), <span class="st">"Observed X"</span>)</span>
+<span id="cb51-30"><a href="#cb51-30" aria-hidden="true" tabindex="-1"></a><span class="fu">draw_heatmap</span>(X_hat, <span class="fu">hcl.colors</span>(<span class="dv">50</span>, <span class="st">"Blues 3"</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb51-31"><a href="#cb51-31" aria-hidden="true" tabindex="-1"></a>             <span class="fu">c</span>(<span class="dv">0</span>, value_limit), <span class="st">"Reconstructed X-hat"</span>)</span>
+<span id="cb51-32"><a href="#cb51-32" aria-hidden="true" tabindex="-1"></a><span class="fu">draw_heatmap</span>(residual, <span class="fu">hcl.colors</span>(<span class="dv">51</span>, <span class="st">"Blue-Red 3"</span>),</span>
+<span id="cb51-33"><a href="#cb51-33" aria-hidden="true" tabindex="-1"></a>             <span class="fu">c</span>(<span class="sc">-</span>residual_limit, residual_limit), <span class="st">"Residual"</span>)</span>
+<span id="cb51-34"><a href="#cb51-34" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(old_par)</span>
+<span id="cb51-35"><a href="#cb51-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-36"><a href="#cb51-36" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(X_hat)</span>
+<span id="cb51-37"><a href="#cb51-37" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(residual)</span>
+<span id="cb51-38"><a href="#cb51-38" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(rmse, <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[1] 180  60
+[1] 180  60
+[1] 3.31</code></pre>
+</div>
+<div id="tabset-13-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-13-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>X_hat <span class="op">=</span> W_star <span class="op">@</span> H_star</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>residual <span class="op">=</span> X <span class="op">-</span> X_hat</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> np.sqrt(np.mean(residual <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.allclose(X_hat.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>), W_star.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>dominant_for_order <span class="op">=</span> fractions.argmax(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>sample_order <span class="op">=</span> np.lexsort(</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>    (<span class="op">-</span>fractions.<span class="bu">max</span>(axis<span class="op">=</span><span class="dv">1</span>), dominant_for_order)</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>value_limit <span class="op">=</span> np.quantile(X, <span class="fl">0.99</span>)</span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>residual_limit <span class="op">=</span> np.quantile(np.<span class="bu">abs</span>(residual), <span class="fl">0.99</span>)</span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>), sharey<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].imshow(X[sample_order], aspect<span class="op">=</span><span class="st">"auto"</span>, cmap<span class="op">=</span><span class="st">"Blues"</span>,</span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>               vmin<span class="op">=</span><span class="dv">0</span>, vmax<span class="op">=</span>value_limit)</span>
+<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"Observed X"</span>)</span>
+<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].imshow(X_hat[sample_order], aspect<span class="op">=</span><span class="st">"auto"</span>, cmap<span class="op">=</span><span class="st">"Blues"</span>,</span>
+<span id="cb53-19"><a href="#cb53-19" aria-hidden="true" tabindex="-1"></a>               vmin<span class="op">=</span><span class="dv">0</span>, vmax<span class="op">=</span>value_limit)</span>
+<span id="cb53-20"><a href="#cb53-20" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Reconstructed X-hat"</span>)</span>
+<span id="cb53-21"><a href="#cb53-21" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].imshow(residual[sample_order], aspect<span class="op">=</span><span class="st">"auto"</span>, cmap<span class="op">=</span><span class="st">"RdBu_r"</span>,</span>
+<span id="cb53-22"><a href="#cb53-22" aria-hidden="true" tabindex="-1"></a>               vmin<span class="op">=-</span>residual_limit, vmax<span class="op">=</span>residual_limit)</span>
+<span id="cb53-23"><a href="#cb53-23" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_title(<span class="st">"Residual"</span>)</span>
+<span id="cb53-24"><a href="#cb53-24" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax <span class="kw">in</span> axes:</span>
+<span id="cb53-25"><a href="#cb53-25" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"Feature"</span>)</span>
+<span id="cb53-26"><a href="#cb53-26" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Sample"</span>)</span>
+<span id="cb53-27"><a href="#cb53-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-28"><a href="#cb53-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(X_hat.shape)</span>
+<span id="cb53-29"><a href="#cb53-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(residual.shape)</span>
+<span id="cb53-30"><a href="#cb53-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">round</span>(rmse, <span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>(180, 60)
+(180, 60)
+3.31</code></pre>
+</div>
+</div>
+</div>
+<p>For the heatmaps, samples are ordered by their <strong>fitted</strong> dominant contribution and then by the strength of that contribution. The same row order and colour limits are used for <span class="math inline">\(X\)</span> and <span class="math inline">\(\hat X\)</span>, so visual differences are meaningful.</p>
+<div class="visual-card">
+<div id="fig-practice-reconstruction" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three aligned heatmaps show observed data, a smoother NMF reconstruction with the same broad blocks, and residual variation concentrated in high-signal blocks but without a coherent signed bias.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-reconstruction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/14-dataset-reconstruction.svg" class="img-fluid figure-img" alt="Three aligned heatmaps show observed data, a smoother NMF reconstruction with the same broad blocks, and residual variation concentrated in high-signal blocks but without a coherent signed bias.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-reconstruction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.6: Aligned heatmaps of the observed matrix, its rank-three NMF reconstruction, and the residual matrix. Rows are ordered using the fitted component fractions rather than simulation truth.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>The reconstruction retains the dominant blocks but smooths small sample-to-sample fluctuations. That is what a useful low-rank representation should do. Residuals need not be tiny everywhere. The more important question is whether they retain systematic structure. A clear block, gradient, or subgroup in <span class="math inline">\(X-\hat X\)</span> would suggest that the provisional rank is too small or that an additive non-negative representation is a poor description of the data.</p>
+<p>RMSE summarizes overall residual size in the original measurement units. It is useful for comparing candidate fits on the same matrix, but it does not reveal <em>where</em> a model fails, so keep the residual plot.</p>
+</section>
+<section id="part-6-use-w-for-sample-structure" class="level2" data-number="2.8">
+<h2 data-number="2.8" class="anchored" data-anchor-id="part-6-use-w-for-sample-structure"><span class="header-section-number">2.8</span> Part 6: Use <span class="math inline">\(W\)</span> for sample structure</h2>
+<p>The rows of <span class="math inline">\(W\)</span> are a low-dimensional representation of the samples. The scatter plots in <a href="#fig-practice-scores" class="quarto-xref">Figure&nbsp;<span>2.3</span></a> show two coordinates at a time. A sample-by-component heatmap shows the complete fitted mixture for every sample.</p>
+<p>For within-sample display, use the scale-aware fractions <span class="math inline">\(q_{ir}\)</span>. A convenient summary label is</p>
+<p><span class="math display">\[
+d_i=\operatorname*{argmax}_r q_{ir}.
+\]</span></p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-14-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-14-1" role="tab" aria-controls="tabset-14-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-14-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-14-2" role="tab" aria-controls="tabset-14-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-14-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-14-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>dominant <span class="ot">&lt;-</span> <span class="fu">max.col</span>(fractions)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>sample_order <span class="ot">&lt;-</span> <span class="fu">order</span>(dominant, <span class="sc">-</span><span class="fu">apply</span>(fractions, <span class="dv">1</span>, max))</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>ordered_fractions <span class="ot">&lt;-</span> fractions[sample_order, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="fu">image</span>(</span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>,</span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(ordered_fractions)),</span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">z =</span> <span class="fu">t</span>(ordered_fractions[<span class="fu">nrow</span>(ordered_fractions)<span class="sc">:</span><span class="dv">1</span>, , <span class="at">drop =</span> <span class="cn">FALSE</span>]),</span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">xaxt =</span> <span class="st">"n"</span>, <span class="at">yaxt =</span> <span class="st">"n"</span>,</span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">xlab =</span> <span class="st">""</span>, <span class="at">ylab =</span> <span class="st">"Sample"</span>,</span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">40</span>, <span class="st">"Blues 3"</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">at =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">labels =</span> <span class="fu">colnames</span>(fractions))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-14-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-14-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb56"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>dominant <span class="op">=</span> fractions.argmax(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>sample_order <span class="op">=</span> np.lexsort((<span class="op">-</span>fractions.<span class="bu">max</span>(axis<span class="op">=</span><span class="dv">1</span>), dominant))</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">5</span>, <span class="dv">7</span>))</span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>ax.imshow(fractions[sample_order], aspect<span class="op">=</span><span class="st">"auto"</span>, cmap<span class="op">=</span><span class="st">"Blues"</span>,</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>          vmin<span class="op">=</span><span class="dv">0</span>, vmax<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>ax.set_xticks(<span class="bu">range</span>(<span class="dv">3</span>), component_names)</span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Sample"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-practice-W-heatmap" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A tall heatmap with samples in rows and three components in columns. Three broad diagonal blocks show dominant components, but many rows contain colour in multiple columns. One mixed row is highlighted.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-W-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/15-W-heatmap.svg" class="img-fluid figure-img" alt="A tall heatmap with samples in rows and three components in columns. Three broad diagonal blocks show dominant components, but many rows contain colour in multiple columns. One mixed row is highlighted.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-W-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.7: A sample-by-component heatmap of scale-normalized component fractions, ordered by dominant fitted component. The highlighted sample_164 has substantial weight in all three columns.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>The <code>argmax</code> label is useful for ordering a heatmap or making a quick summary. It is not the NMF model. The complete row of <span class="math inline">\(W^*\)</span>, or its normalized fraction row, contains richer information. In <a href="#fig-practice-W-heatmap" class="quarto-xref">Figure&nbsp;<span>2.7</span></a>, forcing <code>sample_164</code> into one cluster would hide two other contributions that are almost as large as the winning one.</p>
+<p>Rows of <span class="math inline">\(W^*\)</span> can also be clustered when the research question calls for groups. That is a downstream analysis of the NMF representation, not something NMF automatically guarantees.</p>
+</section>
+<section id="part-7-connect-sample-structure-back-to-features" class="level2" data-number="2.9">
+<h2 data-number="2.9" class="anchored" data-anchor-id="part-7-connect-sample-structure-back-to-features"><span class="header-section-number">2.9</span> Part 7: Connect sample structure back to features</h2>
+<p>The two factors become most useful when read together:</p>
+<ol type="1">
+<li>Fit NMF and inspect sample structure in <span class="math inline">\(W\)</span>.</li>
+<li>Identify a component associated with an interesting separation or gradient.</li>
+<li>Inspect the corresponding row of <span class="math inline">\(H\)</span>.</li>
+<li>Rank its feature weights.</li>
+<li>Look up annotations, pathways, or domain knowledge for those features.</li>
+</ol>
+<p>For example, <a href="#fig-practice-scores" class="quarto-xref">Figure&nbsp;<span>2.3</span></a> shows that the samples carrying the <code>Component 2 dominant</code> metadata label extend mainly along fitted <span class="math inline">\(W_1\)</span>. Returning to row 1 of <span class="math inline">\(H\)</span>, its largest weights are concentrated in features annotated as the second feature family. That coherence offers a possible interpretation of the observed sample separation.</p>
+<p>It does not establish causality. Nor should a component be declared a biological pathway merely because several high-weight genes share an annotation. The fitted profile is a statistical pattern whose scientific meaning still requires validation.</p>
+</section>
+<section id="part-8-choose-k" class="level2" data-number="2.10">
+<h2 data-number="2.10" class="anchored" data-anchor-id="part-8-choose-k"><span class="header-section-number">2.10</span> Part 8: Choose <span class="math inline">\(k\)</span></h2>
+<p>We used <span class="math inline">\(k=3\)</span> provisionally. Now fit a small range of ranks and ask several distinct questions.</p>
+<section id="reconstruction-error" class="level3" data-number="2.10.1">
+<h3 data-number="2.10.1" class="anchored" data-anchor-id="reconstruction-error"><span class="header-section-number">2.10.1</span> Reconstruction error</h3>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-15-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-15-1" role="tab" aria-controls="tabset-15-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-15-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-15-2" role="tab" aria-controls="tabset-15-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-15-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-15-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>ks <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">8</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>rmse_by_k <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ks, <span class="cf">function</span>(k) {</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  rank_fit <span class="ot">&lt;-</span> NNLM<span class="sc">::</span><span class="fu">nnmf</span>(</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    X, <span class="at">k =</span> k, <span class="at">method =</span> <span class="st">"scd"</span>, <span class="at">loss =</span> <span class="st">"mse"</span>,</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">max.iter =</span> <span class="dv">1000</span>, <span class="at">rel.tol =</span> <span class="fl">1e-6</span>, <span class="at">verbose =</span> <span class="dv">0</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>((X <span class="sc">-</span> rank_fit<span class="sc">$</span>W <span class="sc">%*%</span> rank_fit<span class="sc">$</span>H)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(rmse_by_k) <span class="ot">&lt;-</span> ks</span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>rmse_by_k</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>       2        3        4        5        6        7        8
+6.320213 3.308442 3.226778 3.152743 3.085591 3.022554 2.962668</code></pre>
+</div>
+<div id="tabset-15-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-15-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb59"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>rmse_by_k <span class="op">=</span> {}</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">9</span>):</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>    rank_model <span class="op">=</span> NMF(</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>        n_components<span class="op">=</span>k, init<span class="op">=</span><span class="st">"nndsvda"</span>, solver<span class="op">=</span><span class="st">"cd"</span>,</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>        beta_loss<span class="op">=</span><span class="st">"frobenius"</span>, max_iter<span class="op">=</span><span class="dv">3000</span>,</span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>        tol<span class="op">=</span><span class="fl">1e-5</span>, random_state<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>    W_k <span class="op">=</span> rank_model.fit_transform(X)</span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a>    X_hat_k <span class="op">=</span> W_k <span class="op">@</span> rank_model.components_</span>
+<span id="cb59-10"><a href="#cb59-10" aria-hidden="true" tabindex="-1"></a>    rmse_by_k[k] <span class="op">=</span> np.sqrt(np.mean((X <span class="op">-</span> X_hat_k) <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb59-11"><a href="#cb59-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-12"><a href="#cb59-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(rmse_by_k)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>{2: 6.32021118087057, 3: 3.3084356150265952, 4: 3.2267774866079093, 5: 3.1534148643151463, 6: 3.086101401367065, 7: 3.024959524130287, 8: 2.965557539793973}</code></pre>
+</div>
+</div>
+</div>
+<p>Training error generally falls as rank increases: a more flexible factorization can reproduce more detail. More precisely, the <em>best achievable</em> training error cannot increase when <span class="math inline">\(k\)</span> grows, although a particular non-convex optimization run can miss that best solution. Therefore the minimum training RMSE is not, by itself, a rule for selecting rank. Look for diminishing returns, then ask whether the added components are stable and interpretable.</p>
+</section>
+<section id="repeated-run-stability" class="level3" data-number="2.10.2">
+<h3 data-number="2.10.2" class="anchored" data-anchor-id="repeated-run-stability"><span class="header-section-number">2.10.2</span> Repeated-run stability</h3>
+<p>NMF is sensitive to its starting point. A practical stability question is:</p>
+<blockquote class="blockquote">
+<p>If I refit at the same rank from different initializations, do I recover approximately the same component profiles?</p>
+</blockquote>
+<p>The helpers below perform repeated random starts, put the profiles on the same L1 scale, and use a one-to-one assignment internally before averaging component correlations. The matching machinery is only bookkeeping, so the implementation is collapsed by default.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Reproducible stability helpers
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-16-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-16-1" role="tab" aria-controls="tabset-16-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-16-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-16-2" role="tab" aria-controls="tabset-16-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-16-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-16-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>all_permutations <span class="ot">&lt;-</span> <span class="cf">function</span>(values) {</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(values) <span class="sc">==</span> <span class="dv">1</span>L) <span class="fu">return</span>(<span class="fu">matrix</span>(values, <span class="at">nrow =</span> <span class="dv">1</span>))</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">seq_along</span>(values), <span class="cf">function</span>(i) {</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(values[i], <span class="fu">all_permutations</span>(values[<span class="sc">-</span>i]))</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a>best_match_score <span class="ot">&lt;-</span> <span class="cf">function</span>(H_left, H_right, permutations) {</span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a>  k <span class="ot">&lt;-</span> <span class="fu">nrow</span>(H_left)</span>
+<span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a>  correlations <span class="ot">&lt;-</span> <span class="fu">cor</span>(<span class="fu">t</span>(H_left), <span class="fu">t</span>(H_right))</span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a>  matched <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(k), <span class="cf">function</span>(r) {</span>
+<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a>    correlations[r, permutations[, r]]</span>
+<span id="cb61-13"><a href="#cb61-13" aria-hidden="true" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="fu">nrow</span>(permutations)))</span>
+<span id="cb61-14"><a href="#cb61-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">max</span>(<span class="fu">rowMeans</span>(matched))</span>
+<span id="cb61-15"><a href="#cb61-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-16"><a href="#cb61-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-17"><a href="#cb61-17" aria-hidden="true" tabindex="-1"></a>stability_score <span class="ot">&lt;-</span> <span class="cf">function</span>(X, k, <span class="at">n_runs =</span> <span class="dv">15</span>, <span class="at">seed0 =</span> <span class="dv">100</span>) {</span>
+<span id="cb61-18"><a href="#cb61-18" aria-hidden="true" tabindex="-1"></a>  profiles <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">"list"</span>, n_runs)</span>
+<span id="cb61-19"><a href="#cb61-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (run <span class="cf">in</span> <span class="fu">seq_len</span>(n_runs)) {</span>
+<span id="cb61-20"><a href="#cb61-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(seed0 <span class="sc">+</span> run <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb61-21"><a href="#cb61-21" aria-hidden="true" tabindex="-1"></a>    repeat_fit <span class="ot">&lt;-</span> NNLM<span class="sc">::</span><span class="fu">nnmf</span>(</span>
+<span id="cb61-22"><a href="#cb61-22" aria-hidden="true" tabindex="-1"></a>      X, <span class="at">k =</span> k, <span class="at">method =</span> <span class="st">"scd"</span>, <span class="at">loss =</span> <span class="st">"mse"</span>,</span>
+<span id="cb61-23"><a href="#cb61-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">max.iter =</span> <span class="dv">2000</span>, <span class="at">rel.tol =</span> <span class="fl">1e-4</span>, <span class="at">verbose =</span> <span class="dv">0</span></span>
+<span id="cb61-24"><a href="#cb61-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb61-25"><a href="#cb61-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (repeat_fit<span class="sc">$</span>n.iteration <span class="sc">&gt;=</span> <span class="dv">2000</span>) {</span>
+<span id="cb61-26"><a href="#cb61-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">stop</span>(<span class="st">"A repeated fit did not converge"</span>)</span>
+<span id="cb61-27"><a href="#cb61-27" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb61-28"><a href="#cb61-28" aria-hidden="true" tabindex="-1"></a>    profiles[[run]] <span class="ot">&lt;-</span> <span class="fu">sweep</span>(</span>
+<span id="cb61-29"><a href="#cb61-29" aria-hidden="true" tabindex="-1"></a>      repeat_fit<span class="sc">$</span>H, <span class="dv">1</span>, <span class="fu">rowSums</span>(repeat_fit<span class="sc">$</span>H), <span class="st">"/"</span></span>
+<span id="cb61-30"><a href="#cb61-30" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb61-31"><a href="#cb61-31" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb61-32"><a href="#cb61-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-33"><a href="#cb61-33" aria-hidden="true" tabindex="-1"></a>  permutations <span class="ot">&lt;-</span> <span class="fu">all_permutations</span>(<span class="fu">seq_len</span>(k))</span>
+<span id="cb61-34"><a href="#cb61-34" aria-hidden="true" tabindex="-1"></a>  pairs <span class="ot">&lt;-</span> <span class="fu">combn</span>(n_runs, <span class="dv">2</span>)</span>
+<span id="cb61-35"><a href="#cb61-35" aria-hidden="true" tabindex="-1"></a>  scores <span class="ot">&lt;-</span> <span class="fu">apply</span>(pairs, <span class="dv">2</span>, <span class="cf">function</span>(pair) {</span>
+<span id="cb61-36"><a href="#cb61-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">best_match_score</span>(</span>
+<span id="cb61-37"><a href="#cb61-37" aria-hidden="true" tabindex="-1"></a>      profiles[[pair[<span class="dv">1</span>]]], profiles[[pair[<span class="dv">2</span>]]], permutations</span>
+<span id="cb61-38"><a href="#cb61-38" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb61-39"><a href="#cb61-39" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb61-40"><a href="#cb61-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(scores)</span>
+<span id="cb61-41"><a href="#cb61-41" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb61-42"><a href="#cb61-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-43"><a href="#cb61-43" aria-hidden="true" tabindex="-1"></a>stability <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">8</span>, <span class="cf">function</span>(k) <span class="fu">stability_score</span>(X, k))</span>
+<span id="cb61-44"><a href="#cb61-44" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(stability) <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">8</span></span>
+<span id="cb61-45"><a href="#cb61-45" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(stability, <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>     2      3      4      5      6      7      8
+0.9997 0.9977 0.8211 0.8092 0.7912 0.8088 0.7478</code></pre>
+</div>
+<div id="tabset-16-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-16-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb63"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> itertools <span class="im">import</span> combinations</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.optimize <span class="im">import</span> linear_sum_assignment</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> stability_score(X, k, n_runs<span class="op">=</span><span class="dv">15</span>, seed0<span class="op">=</span><span class="dv">100</span>):</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>    profiles <span class="op">=</span> []</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> run <span class="kw">in</span> <span class="bu">range</span>(n_runs):</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>        repeat_model <span class="op">=</span> NMF(</span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>            n_components<span class="op">=</span>k, init<span class="op">=</span><span class="st">"random"</span>, solver<span class="op">=</span><span class="st">"cd"</span>,</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a>            beta_loss<span class="op">=</span><span class="st">"frobenius"</span>, max_iter<span class="op">=</span><span class="dv">5000</span>,</span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a>            tol<span class="op">=</span><span class="fl">1e-4</span>, random_state<span class="op">=</span>seed0 <span class="op">+</span> run,</span>
+<span id="cb63-11"><a href="#cb63-11" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb63-12"><a href="#cb63-12" aria-hidden="true" tabindex="-1"></a>        repeat_model.fit(X)</span>
+<span id="cb63-13"><a href="#cb63-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> repeat_model.n_iter_ <span class="op">&gt;=</span> repeat_model.max_iter:</span>
+<span id="cb63-14"><a href="#cb63-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="ss">f"Rank-</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> repeat did not converge"</span>)</span>
+<span id="cb63-15"><a href="#cb63-15" aria-hidden="true" tabindex="-1"></a>        H_run <span class="op">=</span> repeat_model.components_</span>
+<span id="cb63-16"><a href="#cb63-16" aria-hidden="true" tabindex="-1"></a>        profiles.append(H_run <span class="op">/</span> H_run.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>, keepdims<span class="op">=</span><span class="va">True</span>))</span>
+<span id="cb63-17"><a href="#cb63-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-18"><a href="#cb63-18" aria-hidden="true" tabindex="-1"></a>    scores <span class="op">=</span> []</span>
+<span id="cb63-19"><a href="#cb63-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> H_left, H_right <span class="kw">in</span> combinations(profiles, <span class="dv">2</span>):</span>
+<span id="cb63-20"><a href="#cb63-20" aria-hidden="true" tabindex="-1"></a>        correlations <span class="op">=</span> np.corrcoef(H_left, H_right)[:k, k:]</span>
+<span id="cb63-21"><a href="#cb63-21" aria-hidden="true" tabindex="-1"></a>        rows, columns <span class="op">=</span> linear_sum_assignment(<span class="op">-</span>correlations)</span>
+<span id="cb63-22"><a href="#cb63-22" aria-hidden="true" tabindex="-1"></a>        scores.append(correlations[rows, columns].mean())</span>
+<span id="cb63-23"><a href="#cb63-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.mean(scores)</span>
+<span id="cb63-24"><a href="#cb63-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-25"><a href="#cb63-25" aria-hidden="true" tabindex="-1"></a>stability <span class="op">=</span> {k: stability_score(X, k) <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">9</span>)}</span>
+<span id="cb63-26"><a href="#cb63-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>({k: <span class="bu">round</span>(v, <span class="dv">4</span>) <span class="cf">for</span> k, v <span class="kw">in</span> stability.items()})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>{2: 1.0, 3: 0.9992, 4: 0.9589, 5: 0.9383, 6: 0.9473, 7: 0.9109, 8: 0.8727}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>A high value means that repeated starts produce similar profiles.</p>
+</section>
+<section id="consensus-nmf-and-cophenetic-correlation" class="level3" data-number="2.10.3">
+<h3 data-number="2.10.3" class="anchored" data-anchor-id="consensus-nmf-and-cophenetic-correlation"><span class="header-section-number">2.10.3</span> Consensus NMF and cophenetic correlation</h3>
+<p>Consensus NMF is an established alternative, especially in molecular subtype discovery. Across repeated fits, its consensus matrix records how often each pair of samples receives the same dominant-component label. Cophenetic correlation summarizes how clearly that matrix supports a stable grouping.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span><code>NMF::nmf()</code> clusters columns
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The R <code>NMF</code> package factors the matrix in the orientation supplied, and its consensus workflow concerns the <strong>columns</strong>. Our samples are rows, so use <code>t(X)</code> when the goal is sample consensus clustering:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(<span class="fu">t</span>(X))  <span class="co"># 60 features x 180 samples</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The resulting consensus matrix should be <span class="math inline">\(180\times180\)</span>. This transpose is specific to this package workflow. It is not needed for the earlier <code>NNLM::nnmf(X, ...)</code> or Python fit.</p>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(NMF)</span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>survey <span class="ot">&lt;-</span> NMF<span class="sc">::</span><span class="fu">nmf</span>(</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">t</span>(X),</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">rank =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">8</span>,</span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrun =</span> <span class="dv">15</span>,</span>
+<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"brunet"</span>,</span>
+<span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb66-9"><a href="#cb66-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb66-10"><a href="#cb66-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-11"><a href="#cb66-11" aria-hidden="true" tabindex="-1"></a>consensus_k3 <span class="ot">&lt;-</span> NMF<span class="sc">::</span><span class="fu">consensus</span>(survey<span class="sc">$</span>fit[[<span class="st">"3"</span>]])</span>
+<span id="cb66-12"><a href="#cb66-12" aria-hidden="true" tabindex="-1"></a>cophenetic <span class="ot">&lt;-</span> <span class="fu">sapply</span>(survey<span class="sc">$</span>fit, NMF<span class="sc">::</span>cophcor)</span>
+<span id="cb66-13"><a href="#cb66-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-14"><a href="#cb66-14" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(consensus_k3)</span>
+<span id="cb66-15"><a href="#cb66-15" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cophenetic, <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[1] 180 180
+     2      3      4      5      6      7      8
+0.9923 0.9994 0.9989 0.9985 0.9973 0.9945 0.9950</code></pre>
+<div class="visual-card">
+<div id="fig-practice-rank" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three panels show a decreasing RMSE curve, two stability curves across rank, and a sample consensus heatmap with strong diagonal blocks and softer boundaries.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-practice-rank-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/16-rank-diagnostics.svg" class="img-fluid figure-img" alt="Three panels show a decreasing RMSE curve, two stability curves across rank, and a sample consensus heatmap with strong diagonal blocks and softer boundaries.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-practice-rank-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.8: Three complementary rank diagnostics. Reconstruction RMSE decreases with rank. Repeated-run profile stability and consensus cophenetic correlation summarize repeatability. The sample consensus matrix at rank three shows stable blocks with softer membership for mixed samples.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-practice-rank" class="quarto-xref">Figure&nbsp;<span>2.8</span></a> does not reduce rank choice to one magic number. Each panel answers a different question, and in this dataset they do not all point the same way.</p>
+<p><strong>Reconstruction</strong> is the RMSE curve from Section 9. It answers how much signal a given rank can represent, and it fell at every rank tried, from 6.320 at <span class="math inline">\(k=2\)</span> down to 2.963 at <span class="math inline">\(k=8\)</span> in the R run. A higher rank can only fit the training data at least as well as a lower one, so this curve has no reason to turn back up. Read on its own it would always favor the largest rank tried. It answers whether <span class="math inline">\(k\)</span> is big enough to explain the data, not whether <span class="math inline">\(k\)</span> is the right size.</p>
+<p><strong>Repeated-run stability</strong> answers a different question: if the fit were redone from a new random start, would it find the same components again? NMF’s alternating updates are not guaranteed to reach the same solution twice, so two honest fits at the same rank can disagree. Section 10 restarted the fit 15 times at each rank and scored, for every pair of restarts, how closely their component profiles agree after matching components across runs by correlation (matching is needed because, as Section 10 explained, a component’s column position is arbitrary and can differ from run to run). A score near 1 means every restart rediscovers essentially the same components, and a lower score means the components a single fit reports depend partly on where that fit happened to start. Both language’s stability curves stay above 0.99 through <span class="math inline">\(k=3\)</span> and then drop, R falling to 0.821 at <span class="math inline">\(k=4\)</span> and Python to 0.959. Past <span class="math inline">\(k=3\)</span>, a single fit’s components are less safe to treat as the definitive answer.</p>
+<p><strong>Consensus and cophenetic correlation</strong> ask a related question about samples rather than components: across repeated fits, does each sample keep the same dominant-component label? The consensus matrix from Section 11 records, for every pair of samples, how often the two were grouped together across 15 runs. Cophenetic correlation reduces that matrix to one number describing how cleanly it splits into blocks, close to 1 when sample grouping is essentially unanimous across runs and lower when samples switch sides depending on the run. Here cophenetic correlation peaks at <span class="math inline">\(k=3\)</span> (0.9994) and stays a little lower at every other rank tried, in agreement with the stability curves above.</p>
+<p><strong>Interpretation</strong> is the check already used in Parts 1 and 3: do a rank’s top features form a coherent, mostly single-family group, the way <code>feature_44</code>, <code>feature_31</code>, and the rest of Component 1’s top list did earlier in this chapter? Raising <span class="math inline">\(k\)</span> can start splitting one coherent signal into fragments, or merging two real signals into one, and neither reconstruction nor stability catches that on its own.</p>
+<p>In this dataset the evidence converges. Reconstruction keeps improving and cannot select <span class="math inline">\(k\)</span> by itself, but stability and cophenetic correlation, computed independently from two different procedures, both favor <span class="math inline">\(k=3\)</span>, matching the three interpretable components read out from <span class="math inline">\(H\)</span> back in Part 1. That agreement across independent diagnostics, not any single number, is what makes <span class="math inline">\(k=3\)</span> defensible here. No single diagnostic determines the correct rank for every dataset.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./intuition.html" class="pagination-link" aria-label="NMF">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./mathematics.html" class="pagination-link" aria-label="The mathematics of NMF">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.16">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>3&nbsp; The mathematics of NMF – Non-negative Matrix Factorization (NMF)</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./exercises.html" rel="next">
+<link href="./practice.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-2051dbbaa7ae7a279e016470f480e120.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6075faafe157bb2a1f54b1c2b772188f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./mathematics.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Non-negative Matrix Factorization (NMF)</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intuition.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mathematics.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./exercises.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-representation" id="toc-the-representation" class="nav-link active" data-scroll-target="#the-representation"><span class="header-section-number">3.1</span> The representation</a></li>
+  <li><a href="#why-this-is-a-reduction-in-dimension" id="toc-why-this-is-a-reduction-in-dimension" class="nav-link" data-scroll-target="#why-this-is-a-reduction-in-dimension"><span class="header-section-number">3.2</span> Why this is a reduction in dimension</a></li>
+  <li><a href="#a-low-rank-approximation" id="toc-a-low-rank-approximation" class="nav-link" data-scroll-target="#a-low-rank-approximation"><span class="header-section-number">3.3</span> A low-rank approximation</a></li>
+  <li><a href="#the-reconstruction-error" id="toc-the-reconstruction-error" class="nav-link" data-scroll-target="#the-reconstruction-error"><span class="header-section-number">3.4</span> The reconstruction error</a></li>
+  <li><a href="#relation-to-pca-and-the-svd" id="toc-relation-to-pca-and-the-svd" class="nav-link" data-scroll-target="#relation-to-pca-and-the-svd"><span class="header-section-number">3.5</span> Relation to PCA and the SVD</a></li>
+  <li><a href="#no-closed-form-but-a-tractable-structure" id="toc-no-closed-form-but-a-tractable-structure" class="nav-link" data-scroll-target="#no-closed-form-but-a-tractable-structure"><span class="header-section-number">3.6</span> No closed form, but a tractable structure</a></li>
+  <li><a href="#alternating-optimization" id="toc-alternating-optimization" class="nav-link" data-scroll-target="#alternating-optimization"><span class="header-section-number">3.7</span> Alternating optimization</a>
+  <ul class="collapse">
+  <li><a href="#solving-for-w-with-h-fixed" id="toc-solving-for-w-with-h-fixed" class="nav-link" data-scroll-target="#solving-for-w-with-h-fixed"><span class="header-section-number">3.7.1</span> Solving for W with H fixed</a></li>
+  <li><a href="#solving-for-h-with-w-fixed" id="toc-solving-for-h-with-w-fixed" class="nav-link" data-scroll-target="#solving-for-h-with-w-fixed"><span class="header-section-number">3.7.2</span> Solving for H with W fixed</a></li>
+  <li><a href="#the-loop" id="toc-the-loop" class="nav-link" data-scroll-target="#the-loop"><span class="header-section-number">3.7.3</span> The loop</a></li>
+  </ul></li>
+  <li><a href="#the-gradients-of-the-squared-error" id="toc-the-gradients-of-the-squared-error" class="nav-link" data-scroll-target="#the-gradients-of-the-squared-error"><span class="header-section-number">3.8</span> The gradients of the squared error</a></li>
+  <li><a href="#multiplicative-updates" id="toc-multiplicative-updates" class="nav-link" data-scroll-target="#multiplicative-updates"><span class="header-section-number">3.9</span> Multiplicative updates</a></li>
+  <li><a href="#a-complete-numerical-update" id="toc-a-complete-numerical-update" class="nav-link" data-scroll-target="#a-complete-numerical-update"><span class="header-section-number">3.10</span> A complete numerical update</a></li>
+  <li><a href="#convergence-in-practice" id="toc-convergence-in-practice" class="nav-link" data-scroll-target="#convergence-in-practice"><span class="header-section-number">3.11</span> Convergence in practice</a></li>
+  <li><a href="#local-minima-and-initialization" id="toc-local-minima-and-initialization" class="nav-link" data-scroll-target="#local-minima-and-initialization"><span class="header-section-number">3.12</span> Local minima and initialization</a></li>
+  <li><a href="#scaling-ambiguity" id="toc-scaling-ambiguity" class="nav-link" data-scroll-target="#scaling-ambiguity"><span class="header-section-number">3.13</span> Scaling ambiguity</a></li>
+  <li><a href="#permutation-ambiguity" id="toc-permutation-ambiguity" class="nav-link" data-scroll-target="#permutation-ambiguity"><span class="header-section-number">3.14</span> Permutation ambiguity</a></li>
+  <li><a href="#non-uniqueness-beyond-permutation-and-scaling" id="toc-non-uniqueness-beyond-permutation-and-scaling" class="nav-link" data-scroll-target="#non-uniqueness-beyond-permutation-and-scaling"><span class="header-section-number">3.15</span> Non-uniqueness beyond permutation and scaling</a></li>
+  <li><a href="#the-geometry-of-non-negative-combinations" id="toc-the-geometry-of-non-negative-combinations" class="nav-link" data-scroll-target="#the-geometry-of-non-negative-combinations"><span class="header-section-number">3.16</span> The geometry of non-negative combinations</a></li>
+  <li><a href="#other-loss-functions" id="toc-other-loss-functions" class="nav-link" data-scroll-target="#other-loss-functions"><span class="header-section-number">3.17</span> Other loss functions</a></li>
+  <li><a href="#regularization-and-sparsity" id="toc-regularization-and-sparsity" class="nav-link" data-scroll-target="#regularization-and-sparsity"><span class="header-section-number">3.18</span> Regularization and sparsity</a></li>
+  <li><a href="#practical-algorithms" id="toc-practical-algorithms" class="nav-link" data-scroll-target="#practical-algorithms"><span class="header-section-number">3.19</span> Practical algorithms</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-representation" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="the-representation"><span class="header-section-number">3.1</span> The representation</h2>
+<p>Collect the data into a matrix</p>
+<p><span class="math display">\[X\in\mathbb{R}_{\ge0}^{n\times p}.\]</span></p>
+<p><span class="math inline">\(n\)</span> is the number of samples. <span class="math inline">\(p\)</span> is the number of measured features. Every entry of <span class="math inline">\(X\)</span> is non-negative, which is the starting assumption of everything that follows.</p>
+<p>The goal is a much smaller number of components <span class="math inline">\(k\)</span>, with</p>
+<p><span class="math display">\[k\ll\min(n,p),\]</span></p>
+<p>and an approximation</p>
+<p><span class="math display">\[X\approx WH\]</span></p>
+<p>with</p>
+<p><span class="math display">\[W\in\mathbb{R}_{\ge0}^{n\times k},\qquad H\in\mathbb{R}_{\ge0}^{k\times p}.\]</span></p>
+<p>Open this up one sample at a time. Row <span class="math inline">\(i\)</span> of <span class="math inline">\(X\)</span>, the measurement vector for sample <span class="math inline">\(i\)</span>, is approximated as</p>
+<p><span class="math display">\[x_i\approx W_{i1}H_{1\cdot}+W_{i2}H_{2\cdot}+\cdots+W_{ik}H_{k\cdot}.\]</span></p>
+<p>Every term on the right is a component profile <span class="math inline">\(H_{r\cdot}\)</span>, one full row of <span class="math inline">\(H\)</span> giving that component’s value across all <span class="math inline">\(p\)</span> features, scaled by a single number <span class="math inline">\(W_{ir}\)</span>, the amount of that component present in sample <span class="math inline">\(i\)</span>. Do not move on until this reads naturally: <span class="math inline">\(H_{r\cdot}\)</span> is what component <span class="math inline">\(r\)</span> looks like across the original features, and <span class="math inline">\(W_{ir}\)</span> is how much of component <span class="math inline">\(r\)</span> sample <span class="math inline">\(i\)</span> uses to rebuild its own measurement.</p>
+<p>Zoom in further, to one single predicted entry:</p>
+<p><span class="math display">\[\hat X_{ij}=(WH)_{ij}=\sum_{r=1}^{k}W_{ir}H_{rj}.\]</span></p>
+<p>The predicted value of feature <span class="math inline">\(j\)</span> in sample <span class="math inline">\(i\)</span> is a sum of <span class="math inline">\(k\)</span> contributions, one from each component, each contribution being that component’s amount in sample <span class="math inline">\(i\)</span> times that component’s value at feature <span class="math inline">\(j\)</span>.</p>
+</section>
+<section id="why-this-is-a-reduction-in-dimension" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="why-this-is-a-reduction-in-dimension"><span class="header-section-number">3.2</span> Why this is a reduction in dimension</h2>
+<p>Sample <span class="math inline">\(i\)</span>’s original measurement has <span class="math inline">\(p\)</span> numbers, one per feature. Its representation in <span class="math inline">\(W\)</span> has only <span class="math inline">\(k\)</span> numbers, row <span class="math inline">\(i\)</span> of <span class="math inline">\(W\)</span>. That row, <span class="math inline">\(k\ll p\)</span> numbers, is the reduced description of the sample used throughout this course.</p>
+<p><span class="math inline">\(H\)</span> is not part of the reduced description of any one sample. It is shared across every sample, and its job is to map the <span class="math inline">\(k\)</span> compressed numbers back out toward the original <span class="math inline">\(p\)</span>-dimensional feature space. A sample’s full reconstruction, <span class="math inline">\(\hat x_i = W_{i\cdot}H\)</span>, needs both pieces: the sample’s own row of <span class="math inline">\(W\)</span>, and the shared <span class="math inline">\(H\)</span> that every sample uses.</p>
+</section>
+<section id="a-low-rank-approximation" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="a-low-rank-approximation"><span class="header-section-number">3.3</span> A low-rank approximation</h2>
+<p>A short linear-algebra fact makes precise what kind of approximation <span class="math inline">\(WH\)</span> can be:</p>
+<p><span class="math display">\[\operatorname{rank}(WH)\le k.\]</span></p>
+<p><span class="math inline">\(WH\)</span> is built entirely out of <span class="math inline">\(k\)</span> component directions (the <span class="math inline">\(k\)</span> rows of <span class="math inline">\(H\)</span>), so however <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> are chosen, <span class="math inline">\(WH\)</span> cannot have more than <span class="math inline">\(k\)</span> independent directions in it. Fitting NMF is therefore, among other things, fitting the best available <strong>rank-</strong><span class="math inline">\(k\)</span>, non-negative approximation to <span class="math inline">\(X\)</span>.</p>
+</section>
+<section id="the-reconstruction-error" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="the-reconstruction-error"><span class="header-section-number">3.4</span> The reconstruction error</h2>
+<p>Turn “approximates” into a number. Define the residual</p>
+<p><span class="math display">\[E=X-WH,\]</span></p>
+<p>and, for the squared-error version of NMF used through most of this chapter,</p>
+<p><span class="math display">\[L(W,H)=\frac12\|X-WH\|_F^2.\]</span></p>
+<p>Written out, the Frobenius norm is a sum over every entry:</p>
+<p><span class="math display">\[L(W,H)=\frac12\sum_{i=1}^{n}\sum_{j=1}^{p}\bigl[X_{ij}-(WH)_{ij}\bigr]^2,\]</span></p>
+<p>and substituting the component expansion of <span class="math inline">\((WH)_{ij}\)</span> gives</p>
+<p><span class="math display">\[L(W,H)=\frac12\sum_i\sum_j\left[X_{ij}-\sum_{r=1}^{k}W_{ir}H_{rj}\right]^2.\]</span></p>
+<p>Fitting NMF means choosing every entry of <span class="math inline">\(W\)</span> and every entry of <span class="math inline">\(H\)</span> to make this sum small, subject to</p>
+<p><span class="math display">\[W\ge0,\qquad H\ge0.\]</span></p>
+</section>
+<section id="relation-to-pca-and-the-svd" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="relation-to-pca-and-the-svd"><span class="header-section-number">3.5</span> Relation to PCA and the SVD</h2>
+<p>For a fixed matrix <span class="math inline">\(X\)</span> and a fixed target rank <span class="math inline">\(k\)</span>, the truncated SVD gives the best possible rank-<span class="math inline">\(k\)</span> approximation under exactly this Frobenius loss, with no sign restriction on the factors. NMF solves the same kind of problem over a strictly smaller feasible set: every rank-<span class="math inline">\(k\)</span>, non-negative factorization is also an unrestricted rank-<span class="math inline">\(k\)</span> factorization, but not the reverse. NMF cannot achieve a lower reconstruction error than truncated SVD at the same rank, and it should not be expected to. The value of NMF is the shape of the representation it returns, not a reconstruction advantage over the unrestricted best possible one.</p>
+<p>The comparison with PCA needs one more piece of care. PCA’s components are orthogonal to each other, which is what makes statements like “PC1 explains 37% of the variance” meaningful: the total variance splits cleanly across orthogonal directions. NMF’s components are generally <strong>not</strong> orthogonal, so there is no NMF equivalent of that statement with the same mathematical content. A reconstruction error at a given rank is a well-defined, comparable number. A clean percentage-of-variance split across components is not something NMF provides.</p>
+</section>
+<section id="no-closed-form-but-a-tractable-structure" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="no-closed-form-but-a-tractable-structure"><span class="header-section-number">3.6</span> No closed form, but a tractable structure</h2>
+<p>The loss depends on the <em>product</em> <span class="math inline">\(WH\)</span>. With both <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> unknown at the same time, <span class="math inline">\(L(W,H)\)</span> is not a convex function of <span class="math inline">\((W,H)\)</span> jointly, so there is no single-step formula analogous to the SVD that solves for both at once.</p>
+<p>Fix one of the two factors, though, and the problem becomes much simpler. Hold <span class="math inline">\(H\)</span> fixed and look at <span class="math inline">\(L\)</span> as a function of <span class="math inline">\(W\)</span> alone: it is a sum of ordinary squared errors, quadratic in <span class="math inline">\(W\)</span>, with a non-negativity constraint. That is a non-negative least squares problem, one that is well understood and efficiently solvable. Exactly the same is true the other way around: hold <span class="math inline">\(W\)</span> fixed, and <span class="math inline">\(L\)</span> becomes a non-negative least squares problem in <span class="math inline">\(H\)</span>.</p>
+<p>This is the opening for an algorithm: alternate between the two easy subproblems instead of attempting the one hard joint problem directly.</p>
+</section>
+<section id="alternating-optimization" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="alternating-optimization"><span class="header-section-number">3.7</span> Alternating optimization</h2>
+<section id="solving-for-w-with-h-fixed" class="level3" data-number="3.7.1">
+<h3 data-number="3.7.1" class="anchored" data-anchor-id="solving-for-w-with-h-fixed"><span class="header-section-number">3.7.1</span> Solving for W with H fixed</h3>
+<p>With <span class="math inline">\(H\)</span> fixed, the subproblem is</p>
+<p><span class="math display">\[\min_{W\ge0}\ \frac12\|X-WH\|_F^2.\]</span></p>
+<p>Row <span class="math inline">\(i\)</span> of this problem asks for the coefficients <span class="math inline">\(w_i\)</span> (row <span class="math inline">\(i\)</span> of <span class="math inline">\(W\)</span>) that best reconstruct sample <span class="math inline">\(i\)</span>’s measurement <span class="math inline">\(x_i\)</span> as a combination of the component profiles in <span class="math inline">\(H\)</span>. Setting aside non-negativity for a moment, the ordinary least-squares stationary condition for this problem is</p>
+<p><span class="math display">\[WHH^T=XH^T,\]</span></p>
+<p>and, if <span class="math inline">\(HH^T\)</span> is invertible,</p>
+<p><span class="math display">\[W=XH^T(HH^T)^{-1}.\]</span></p>
+<p>This unconstrained solution is exactly what ordinary linear regression would give, and it is not, in general, an answer to NMF’s problem: nothing stops it from containing negative entries. NMF replaces this closed-form regression with a <strong>non-negative</strong> least squares solve, which is the whole reason a specialized algorithm is needed instead of a single matrix formula.</p>
+</section>
+<section id="solving-for-h-with-w-fixed" class="level3" data-number="3.7.2">
+<h3 data-number="3.7.2" class="anchored" data-anchor-id="solving-for-h-with-w-fixed"><span class="header-section-number">3.7.2</span> Solving for H with W fixed</h3>
+<p>The mirror problem, with <span class="math inline">\(W\)</span> fixed, is</p>
+<p><span class="math display">\[\min_{H\ge0}\ \frac12\|X-WH\|_F^2,\]</span></p>
+<p>again a non-negative least squares problem, this time solving for every column of <span class="math inline">\(H\)</span> using the fixed component profiles in <span class="math inline">\(W\)</span> as the regressors.</p>
+</section>
+<section id="the-loop" class="level3" data-number="3.7.3">
+<h3 data-number="3.7.3" class="anchored" data-anchor-id="the-loop"><span class="header-section-number">3.7.3</span> The loop</h3>
+<p>Together these two steps give the alternating algorithm used, in one form or another, by every practical NMF implementation:</p>
+<div class="visual-card">
+<div id="fig-alternating-loop" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A diagram with two boxes connected in a loop. The first box reads: fix H, solve for W, non-negative least squares. The second box reads: fix W, solve for H, non-negative least squares. An arrow leads from the first box to the second, and a curved arrow leads back from the second to the first, labelled 'repeat until the reconstruction error stops improving'.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-alternating-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/17-alternating-loop.svg" class="img-fluid figure-img" alt="A diagram with two boxes connected in a loop. The first box reads: fix H, solve for W, non-negative least squares. The second box reads: fix W, solve for H, non-negative least squares. An arrow leads from the first box to the second, and a curved arrow leads back from the second to the first, labelled 'repeat until the reconstruction error stops improving'.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-alternating-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.1: Alternating optimization: fix one factor, solve a non-negative least squares problem for the other, then switch.
+</figcaption>
+</figure>
+</div>
+</div>
+<ol type="1">
+<li>Fix <span class="math inline">\(H\)</span>, solve the non-negative least squares problem for <span class="math inline">\(W\)</span>.</li>
+<li>Fix <span class="math inline">\(W\)</span>, solve the non-negative least squares problem for <span class="math inline">\(H\)</span>.</li>
+<li>Repeat.</li>
+</ol>
+<p>Each of the two steps can only decrease <span class="math inline">\(L\)</span> or leave it unchanged, since each step solves its subproblem exactly (or at least does not make it worse). The multiplicative updates derived next are one specific, widely used way to carry out steps 1 and 2.</p>
+</section>
+</section>
+<section id="the-gradients-of-the-squared-error" class="level2" data-number="3.8">
+<h2 data-number="3.8" class="anchored" data-anchor-id="the-gradients-of-the-squared-error"><span class="header-section-number">3.8</span> The gradients of the squared error</h2>
+<p>To derive an explicit update rule, start from</p>
+<p><span class="math display">\[L=\frac12\|X-WH\|_F^2\]</span></p>
+<p>and rewrite the Frobenius norm as a trace, which makes differentiating with respect to a whole matrix manageable:</p>
+<p><span class="math display">\[L=\frac12\operatorname{tr}\bigl[(X-WH)^T(X-WH)\bigr].\]</span></p>
+<p>Expand the product inside the trace:</p>
+<p><span class="math display">\[\operatorname{tr}\bigl[(X-WH)^T(X-WH)\bigr]
+=\operatorname{tr}(X^TX)-2\operatorname{tr}(X^TWH)+\operatorname{tr}(H^TW^TWH).\]</span></p>
+<p>Differentiating each term with respect to <span class="math inline">\(H\)</span> (using the standard matrix-calculus identities <span class="math inline">\(\partial\operatorname{tr}(A^TB)/\partial A=B\)</span> and <span class="math inline">\(\partial\operatorname{tr}(A^TBA)/\partial A=(B+B^T)A\)</span>, with <span class="math inline">\(B=W^TW\)</span> symmetric) and dividing by 2 gives</p>
+<p><span class="math display">\[\frac{\partial L}{\partial H}=W^TWH-W^TX.\]</span></p>
+<p>By the same steps, differentiating with respect to <span class="math inline">\(W\)</span> gives</p>
+<p><span class="math display">\[\frac{\partial L}{\partial W}=WHH^T-XH^T.\]</span></p>
+<p>Check the dimensions before moving on. <span class="math inline">\(H\)</span> is <span class="math inline">\(k\times p\)</span>, so its gradient must also be <span class="math inline">\(k\times p\)</span>. <span class="math inline">\(W^TW\)</span> is <span class="math inline">\(k\times k\)</span> and <span class="math inline">\(H\)</span> is <span class="math inline">\(k\times p\)</span>, so <span class="math inline">\(W^TWH\)</span> is <span class="math inline">\(k\times p\)</span>. <span class="math inline">\(W^T\)</span> is <span class="math inline">\(k\times n\)</span> and <span class="math inline">\(X\)</span> is <span class="math inline">\(n\times p\)</span>, so <span class="math inline">\(W^TX\)</span> is <span class="math inline">\(k\times p\)</span>. Both terms, and therefore the gradient, are <span class="math inline">\(k\times p\)</span>, matching <span class="math inline">\(H\)</span>. The same check on the <span class="math inline">\(W\)</span>-gradient confirms it is <span class="math inline">\(n\times k\)</span>, matching <span class="math inline">\(W\)</span>.</p>
+</section>
+<section id="multiplicative-updates" class="level2" data-number="3.9">
+<h2 data-number="3.9" class="anchored" data-anchor-id="multiplicative-updates"><span class="header-section-number">3.9</span> Multiplicative updates</h2>
+<p>An ordinary gradient descent step for <span class="math inline">\(H\)</span> would be</p>
+<p><span class="math display">\[H\leftarrow H-\eta\odot\bigl(W^TWH-W^TX\bigr)\]</span></p>
+<p>for some step size <span class="math inline">\(\eta\)</span>, with <span class="math inline">\(\odot\)</span> denoting elementwise multiplication. A fixed, scalar step size cannot guarantee <span class="math inline">\(H\)</span> stays non-negative. The Lee-Seung multiplicative update is what happens when the step size is instead chosen <em>elementwise</em>, specifically</p>
+<p><span class="math display">\[(\eta_H)_{rj}=\frac{H_{rj}}{(W^TWH)_{rj}}.\]</span></p>
+<p>Substitute this into the gradient step:</p>
+<p><span class="math display">\[H_{rj}-\ (\eta_H)_{rj}\bigl(W^TWH-W^TX\bigr)_{rj}
+=H_{rj}-H_{rj}\,\frac{(W^TWH)_{rj}-(W^TX)_{rj}}{(W^TWH)_{rj}}
+=H_{rj}\left[1-1+\frac{(W^TX)_{rj}}{(W^TWH)_{rj}}\right],\]</span></p>
+<p>which simplifies to</p>
+<p><span class="math display">\[\boxed{\ H\leftarrow H\odot\dfrac{W^TX}{W^TWH}\ }\]</span></p>
+<p>with the multiplication and division both elementwise. The mirror derivation for <span class="math inline">\(W\)</span>, starting from <span class="math inline">\(\partial L/\partial W\)</span> and the elementwise step size <span class="math inline">\((\eta_W)_{ir}=W_{ir}/(WHH^T)_{ir}\)</span>, gives</p>
+<p><span class="math display">\[\boxed{\ W\leftarrow W\odot\dfrac{XH^T}{WHH^T}\ }\]</span></p>
+<p>Because every quantity involved, <span class="math inline">\(X\)</span>, <span class="math inline">\(W\)</span>, <span class="math inline">\(H\)</span>, and therefore every entry of <span class="math inline">\(W^TX\)</span>, <span class="math inline">\(W^TWH\)</span>, <span class="math inline">\(XH^T\)</span>, and <span class="math inline">\(WHH^T\)</span>, is non-negative, each update multiplies a non-negative entry by a non-negative ratio. An entry that starts positive stays non-negative after the update. This is the precise mechanism by which multiplicative updates respect <span class="math inline">\(W\ge0\)</span>, <span class="math inline">\(H\ge0\)</span> automatically, with no separate projection step needed. A loose but common way to describe the ratio is “observed divided by predicted.” That is a useful intuition after the derivation, but the terms above, <span class="math inline">\(W^TX\)</span> against <span class="math inline">\(W^TWH\)</span>, are not literally <span class="math inline">\(X\)</span> divided by <span class="math inline">\(\hat X\)</span>. Treat the phrase as a mnemonic, not a definition.</p>
+</section>
+<section id="a-complete-numerical-update" class="level2" data-number="3.10">
+<h2 data-number="3.10" class="anchored" data-anchor-id="a-complete-numerical-update"><span class="header-section-number">3.10</span> A complete numerical update</h2>
+<p>A small, fully explicit example makes the update equations concrete. Take</p>
+<p><span class="math display">\[X=\begin{bmatrix}5&amp;3\\4&amp;2\\1&amp;4\end{bmatrix},\qquad
+W=\begin{bmatrix}1&amp;0.5\\0.8&amp;0.4\\0.2&amp;1\end{bmatrix},\qquad
+H=\begin{bmatrix}3&amp;1\\1&amp;2\end{bmatrix}.\]</span></p>
+<p>The initial squared reconstruction error is</p>
+<p><span class="math display">\[\|X-WH\|_F^2=8.45.\]</span></p>
+<p><strong>Updating H.</strong> First,</p>
+<p><span class="math display">\[W^TX=\begin{bmatrix}8.4&amp;5.4\\5.1&amp;6.3\end{bmatrix},\qquad
+W^TWH=\begin{bmatrix}6.06&amp;3.72\\4.47&amp;3.84\end{bmatrix}.\]</span></p>
+<p>Every entry of <span class="math inline">\(W^TWH\)</span> is <span class="math inline">\((W^TW)\)</span> (a <span class="math inline">\(2\times2\)</span> matrix) times <span class="math inline">\(H\)</span>. For instance, <span class="math inline">\((W^TW)_{11}=1^2+0.8^2+0.2^2=1.68\)</span> and <span class="math inline">\((W^TWH)_{11}=1.68\times3+(W^TW)_{12}\times1\)</span>, and so on for the rest, all ordinary matrix multiplication. Dividing <span class="math inline">\(W^TX\)</span> by <span class="math inline">\(W^TWH\)</span> elementwise and multiplying by <span class="math inline">\(H\)</span> gives</p>
+<p><span class="math display">\[H_{\text{new}}=H\odot\frac{W^TX}{W^TWH}=
+\begin{bmatrix}4.1584&amp;1.4516\\1.1409&amp;3.2813\end{bmatrix}.\]</span></p>
+<p>The squared error after this one update, still with the original <span class="math inline">\(W\)</span>, drops to</p>
+<p><span class="math display">\[\|X-WH_{\text{new}}\|_F^2=1.4831.\]</span></p>
+<p><strong>Updating W.</strong> Using <span class="math inline">\(H_{\text{new}}\)</span>,</p>
+<p><span class="math display">\[XH_{\text{new}}^T=\begin{bmatrix}25.1469&amp;15.5484\\19.5369&amp;11.1263\\9.9649&amp;14.2659\end{bmatrix},\qquad
+WH_{\text{new}}H_{\text{new}}^T=\begin{bmatrix}24.1534&amp;15.5418\\19.3227&amp;12.4334\\13.3875&amp;13.9699\end{bmatrix}.\]</span></p>
+<p>giving</p>
+<p><span class="math display">\[W_{\text{new}}=W\odot\frac{XH_{\text{new}}^T}{WH_{\text{new}}H_{\text{new}}^T}=
+\begin{bmatrix}1.0411&amp;0.5002\\0.8089&amp;0.3579\\0.1489&amp;1.0212\end{bmatrix}.\]</span></p>
+<p>The squared error after this single H-then-W cycle is</p>
+<p><span class="math display">\[\|X-W_{\text{new}}H_{\text{new}}\|_F^2=1.0093.\]</span></p>
+<p>One full alternation, updating <span class="math inline">\(H\)</span> once and then <span class="math inline">\(W\)</span> once, took the error from 8.45 to 1.0093. Both updates were ordinary matrix multiplications followed by an elementwise rescaling. Nothing about them required calculus at the point of use, only at the point of derivation.</p>
+<div class="visual-card">
+<div id="fig-convergence" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A line plot of squared reconstruction error against iteration, starting near 8.45, dropping sharply in the first few iterations, marked points at iterations 0, 1 and 2 corresponding to the values worked out by hand, and continuing to decrease smoothly and monotonically toward a very small value.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-convergence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/19-convergence.svg" class="img-fluid figure-img" alt="A line plot of squared reconstruction error against iteration, starting near 8.45, dropping sharply in the first few iterations, marked points at iterations 0, 1 and 2 corresponding to the values worked out by hand, and continuing to decrease smoothly and monotonically toward a very small value.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-convergence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.2: Squared reconstruction error over 60 further H-then-W cycles, starting from the example above.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-convergence" class="quarto-xref">Figure&nbsp;<span>3.2</span></a> continues the same example well past the first cycle. The error keeps falling and does not increase at any step, matching the general property established above: each of the two sub-updates can only improve, or leave unchanged, the objective it is solving. In this particular toy example <span class="math inline">\(k=2\)</span> equals the smaller dimension of <span class="math inline">\(X\)</span>, so a near-exact non-negative factorization happens to be reachable and the error keeps falling toward zero. With a real dataset, <span class="math inline">\(k\)</span> is chosen far smaller than <span class="math inline">\(\min(n,p)\)</span> and the error instead levels off at some positive value.</p>
+</section>
+<section id="convergence-in-practice" class="level2" data-number="3.11">
+<h2 data-number="3.11" class="anchored" data-anchor-id="convergence-in-practice"><span class="header-section-number">3.11</span> Convergence in practice</h2>
+<p>One complete iteration of the algorithm, as used throughout this course, means one update of <span class="math inline">\(H\)</span> followed by one update of <span class="math inline">\(W\)</span>. Common stopping rules include a small relative change in the loss between successive iterations, a small change in <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> themselves, or a maximum number of iterations, whichever comes first.</p>
+<p>A decreasing loss curve like <a href="#fig-convergence" class="quarto-xref">Figure&nbsp;<span>3.2</span></a> is evidence that the algorithm is doing its job, step by step. It is not evidence that the run has found the single best possible factorization. NMF’s objective is nonconvex, and a monotonically decreasing sequence of updates is only guaranteed to converge to <em>a</em> stationary point, not necessarily the global minimum.</p>
+</section>
+<section id="local-minima-and-initialization" class="level2" data-number="3.12">
+<h2 data-number="3.12" class="anchored" data-anchor-id="local-minima-and-initialization"><span class="header-section-number">3.12</span> Local minima and initialization</h2>
+<p>Because the objective is nonconvex, where the algorithm starts can determine where it ends up. Two runs started from different initial <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> can converge to genuinely different factorizations, with different reconstruction errors and different-looking components, even on the same data with the same rank.</p>
+<p>The simplest starting point is a random one: fill <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> with small positive random numbers and start alternating. This works, but different random seeds can give noticeably different results, and repeated runs are often needed to get a sense of how stable a given rank’s solution is.</p>
+<p><strong>NNDSVD</strong> (nonnegative double SVD) is a structured alternative. Rather than starting from noise, it builds an initial <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> directly from the leading singular vectors of <span class="math inline">\(X\)</span>, splitting each singular vector into its positive and negative parts and keeping only whichever part is larger for that component. The result is a deterministic, informed starting point that tends to reach a good solution in fewer iterations than a random start, without needing to know anything about NMF’s optimization landscape in advance.</p>
+<p>There is a practical wrinkle worth knowing before using it with multiplicative updates. Basic NNDSVD can produce initial entries that are exactly zero, whenever the negative part of a singular vector was the smaller one that got discarded, and the multiplicative updates cannot revive an exact zero once one is in place: if <span class="math inline">\(H_{rj}=0\)</span> at some iteration,</p>
+<p><span class="math display">\[H_{rj}^{\text{new}}=0\times\frac{(W^TX)_{rj}}{(W^TWH)_{rj}}=0\]</span></p>
+<p>regardless of what the ratio equals, and <span class="math inline">\(H_{rj}\)</span> stays zero forever after. This is called zero locking. In practice, implementations that combine NNDSVD with multiplicative updates typically replace the exact zeros with small positive values (variants such as <code>nndsvda</code> and <code>nndsvdar</code> do this), so the structured starting point is kept without permanently freezing any entry at zero.</p>
+</section>
+<section id="scaling-ambiguity" class="level2" data-number="3.13">
+<h2 data-number="3.13" class="anchored" data-anchor-id="scaling-ambiguity"><span class="header-section-number">3.13</span> Scaling ambiguity</h2>
+<p>A reconstruction <span class="math inline">\(WH\)</span> does not pin down <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span> uniquely, even ignoring local minima. For any positive diagonal matrix <span class="math inline">\(D\)</span>,</p>
+<p><span class="math display">\[WH=(WD)(D^{-1}H),\]</span></p>
+<p>since <span class="math inline">\(DD^{-1}\)</span> is the identity. <span class="math inline">\(WD\)</span> rescales each column of <span class="math inline">\(W\)</span> (equivalently, each component’s scores) by a positive constant, and <span class="math inline">\(D^{-1}H\)</span> rescales the corresponding row of <span class="math inline">\(H\)</span> by the reciprocal constant, and the product is completely unchanged.</p>
+<p>As a small check, take <span class="math inline">\(D=\operatorname{diag}(2,0.5)\)</span> with <span class="math inline">\(k=2\)</span>. Doubling column 1 of <span class="math inline">\(W\)</span> and halving row 1 of <span class="math inline">\(H\)</span>, while halving column 2 of <span class="math inline">\(W\)</span> and doubling row 2 of <span class="math inline">\(H\)</span>, leaves <span class="math inline">\(WH\)</span> exactly as it was, entry for entry. This is exactly what was observed in the previous chapter’s R-versus-Python comparison: one fit’s <span class="math inline">\(H\)</span> stayed under about 0.03 while its <span class="math inline">\(W\)</span> ran into the thousands, and the other fit’s <span class="math inline">\(H\)</span> ran up to about 43 while its <span class="math inline">\(W\)</span> stayed under about 2, yet both reconstructed <span class="math inline">\(X\)</span> about equally well. Absolute magnitudes of <span class="math inline">\(W\)</span> or <span class="math inline">\(H\)</span> are not meaningful on their own, or comparable across two different fits, until this scaling has been fixed by some convention, such as normalizing every row of <span class="math inline">\(H\)</span> to unit norm.</p>
+</section>
+<section id="permutation-ambiguity" class="level2" data-number="3.14">
+<h2 data-number="3.14" class="anchored" data-anchor-id="permutation-ambiguity"><span class="header-section-number">3.14</span> Permutation ambiguity</h2>
+<p>A second, unrelated ambiguity comes from the fact that component labels are arbitrary. Swapping columns <span class="math inline">\(r\)</span> and <span class="math inline">\(s\)</span> of <span class="math inline">\(W\)</span> together with rows <span class="math inline">\(r\)</span> and <span class="math inline">\(s\)</span> of <span class="math inline">\(H\)</span> produces exactly the same product <span class="math inline">\(WH\)</span>: every term <span class="math inline">\(W_{ir}H_{rj}\)</span> is still added to the same sum, just under a different name. This means “component 1” in one NMF run and “component 1” in another run of the same data need not correspond to the same underlying pattern at all, even when both runs found essentially the same solution. This is exactly why the previous chapter’s repeated-run stability check matched each pair of fitted profiles to each other by correlation before averaging their agreement, rather than assuming column 1 meant the same thing across runs.</p>
+</section>
+<section id="non-uniqueness-beyond-permutation-and-scaling" class="level2" data-number="3.15">
+<h2 data-number="3.15" class="anchored" data-anchor-id="non-uniqueness-beyond-permutation-and-scaling"><span class="header-section-number">3.15</span> Non-uniqueness beyond permutation and scaling</h2>
+<p>Permutation and scaling are harmless ambiguities: they do not change what was actually learned, only how it is labeled and normalized. NMF can also exhibit a deeper kind of non-uniqueness, in which genuinely different pairs <span class="math inline">\((W,H)\)</span> and <span class="math inline">\((W',H')\)</span>, not related by any permutation or rescaling, achieve similar or even identical reconstruction error. When this happens, no amount of relabeling turns one solution into the other, because they describe the data differently, not just with different names for the same description. This is one of the reasons repeated runs, stability analysis, and independent scientific validation of what a component means all matter in practice: a single fit’s components are not automatically the one correct answer, even when the reconstruction error looks good.</p>
+</section>
+<section id="the-geometry-of-non-negative-combinations" class="level2" data-number="3.16">
+<h2 data-number="3.16" class="anchored" data-anchor-id="the-geometry-of-non-negative-combinations"><span class="header-section-number">3.16</span> The geometry of non-negative combinations</h2>
+<p>Everything above has an algebraic flavor. It is worth also seeing it geometrically, connecting back to the additive-parts picture from the first chapter. PCA’s reconstructions span an unrestricted linear subspace: any combination of its basis directions, positive or negative, is reachable. NMF’s reconstructions are restricted to</p>
+<p><span class="math display">\[x_i\approx\sum_{r=1}^{k}W_{ir}H_{r\cdot},\qquad W_{ir}\ge0,\]</span></p>
+<p>and the set of points reachable this way, using only non-negative coefficients on a fixed set of basis rows of <span class="math inline">\(H\)</span>, is a <strong>cone</strong>: closed under adding two reachable points together, and closed under scaling a reachable point up by any non-negative amount, but not closed under negation.</p>
+<div class="visual-card">
+<div id="fig-cone" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A two-dimensional plot with two coloured arrows from the origin representing two basis rows of H, a shaded wedge between them representing every non-negative combination of the two, and eight points scattered inside the wedge, each connected to the origin by a thin line, representing samples built from different non-negative amounts of the two components.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cone-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/18-nmf-cone-geometry.svg" class="img-fluid figure-img" alt="A two-dimensional plot with two coloured arrows from the origin representing two basis rows of H, a shaded wedge between them representing every non-negative combination of the two, and eight points scattered inside the wedge, each connected to the origin by a thin line, representing samples built from different non-negative amounts of the two components.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cone-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.3: Two basis rows of H (arrows) and eight points built as different non-negative combinations of them (dots), all landing inside the shaded cone.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Each dot in <a href="#fig-cone" class="quarto-xref">Figure&nbsp;<span>3.3</span></a> is one sample, placed by choosing two non-negative coefficients and combining the two basis directions. No coefficient choice can place a point outside the shaded wedge. This is the same restriction, in a picture, as <span class="math inline">\(W\ge0\)</span> in the algebra above, and it is why NMF’s components tend to behave like ingredients that can be present in some amount or absent, rather than like directions that a sample can also be measured <em>against</em> in the opposite sense.</p>
+</section>
+<section id="other-loss-functions" class="level2" data-number="3.17">
+<h2 data-number="3.17" class="anchored" data-anchor-id="other-loss-functions"><span class="header-section-number">3.17</span> Other loss functions</h2>
+<p>Everything so far used squared (Frobenius) error. It is a natural default, but not the only reasonable choice, and NMF as a factorization <em>structure</em>, <span class="math inline">\(X\approx WH\)</span> with both factors non-negative, is separate from any particular choice of loss.</p>
+<p>For count-like data, a Kullback-Leibler-based loss is a common alternative:</p>
+<p><span class="math display">\[D_{\mathrm{KL}}(X\|WH)=\sum_{i,j}\left[X_{ij}\log\frac{X_{ij}}{(WH)_{ij}}-X_{ij}+(WH)_{ij}\right].\]</span></p>
+<p>This loss arises naturally from treating each <span class="math inline">\(X_{ij}\)</span> as a Poisson-distributed count with mean <span class="math inline">\((WH)_{ij}\)</span>, which is a more realistic noise model for sequencing counts or other count data than assuming additive Gaussian noise everywhere, the implicit assumption behind squared error. Lee and Seung derived multiplicative updates for this loss as well, with a similar elementwise-ratio structure and the same non-negativity-preserving property, though the update equations themselves differ from the Frobenius ones given above.</p>
+<p>Frobenius loss and KL divergence are the two ends most commonly used in practice, but both are special cases of a broader family, the <strong>beta-divergence</strong>, indexed by a single parameter <span class="math inline">\(\beta\)</span>: <span class="math inline">\(\beta=2\)</span> recovers Frobenius (squared Gaussian-like error), <span class="math inline">\(\beta=1\)</span> recovers the KL divergence above, and <span class="math inline">\(\beta=0\)</span> recovers the Itakura-Saito divergence, better suited to data with multiplicative, rather than additive, noise. The general beta-divergence updates are not derived here. The point to take away is that “fitting NMF” always means choosing both a rank and a loss, and that changing the loss changes which factorization is considered best, sometimes considerably.</p>
+</section>
+<section id="regularization-and-sparsity" class="level2" data-number="3.18">
+<h2 data-number="3.18" class="anchored" data-anchor-id="regularization-and-sparsity"><span class="header-section-number">3.18</span> Regularization and sparsity</h2>
+<p>The objective can be extended with penalty terms on <span class="math inline">\(W\)</span> and <span class="math inline">\(H\)</span>, most commonly an L1 penalty (encouraging many entries to shrink toward exactly zero) or an L2 penalty (discouraging any single entry from growing very large), added to the reconstruction loss and traded off against it with a tuning weight.</p>
+<p>Non-negativity alone does not guarantee sparse components. It rules out cancellation between positive and negative terms, which often produces components that are <em>more</em> concentrated than an unconstrained factorization would give, but a plain non-negative fit can still spread a component’s weight thinly across many features. An explicit L1 penalty on <span class="math inline">\(H\)</span> pushes weak, uncertain feature loadings toward exactly zero, which can make a component easier to read as a short, specific list of defining features. That benefit comes with a cost: pushed too hard, the same penalty can zero out real but modest signal along with the noise, so the amount of regularization is itself a modelling choice to be checked, not a free improvement.</p>
+</section>
+<section id="practical-algorithms" class="level2" data-number="3.19">
+<h2 data-number="3.19" class="anchored" data-anchor-id="practical-algorithms"><span class="header-section-number">3.19</span> Practical algorithms</h2>
+<p>The multiplicative update derived in this chapter is the clearest way to see <em>why</em> NMF’s non-negativity constraint can be satisfied automatically, step by step, and it is a genuine, usable algorithm. It is not the only one used in current software. Modern implementations frequently reach for coordinate descent, full alternating non-negative least squares solved by a dedicated solver, or HALS (hierarchical alternating least squares), which updates one column of <span class="math inline">\(W\)</span> or one row of <span class="math inline">\(H\)</span> at a time rather than the whole matrix at once. All of these keep the same conceptual loop derived above:</p>
+<ol type="1">
+<li>fix one factor,</li>
+<li>optimize the other under a non-negativity constraint,</li>
+<li>switch,</li>
+<li>repeat,</li>
+</ol>
+<p>and differ mainly in <em>how</em> step 2 is solved and how quickly it converges. <code>scikit-learn</code>’s current <code>NMF</code> implementation offers both coordinate descent (<code>solver="cd"</code>, the default) and multiplicative updates (<code>solver="mu"</code>), the latter needed for any loss other than Frobenius. R’s <code>NNLM::nnmf()</code> offers sequential coordinate-wise descent (<code>method="scd"</code>, its default and generally the fastest option) alongside Lee-Seung multiplicative updates (<code>method="lee"</code>). R’s <code>NMF</code> package implements several algorithms under one interface, including the original Brunet et al.&nbsp;(2004) KL-based workflow (<code>method="brunet"</code>) used for the molecular pattern discovery and consensus analysis in the next chapter’s exercise.</p>
+<p>The practical upshot is the one stated at the start of this section: NMF names a factorization structure and an objective, not a single algorithm, and two packages that both claim to “do NMF” can use different losses and different solvers by default. Using a structured NNDSVD initialization for a reproducible fit, and matching repeated fits’ components to each other by correlation before trusting any of them individually, both from the previous chapter, are the general discipline this implies, not one-off tricks specific to that chapter’s example.</p>
+<p>The <a href="./exercises.html">final chapter</a> puts all of this to work on a real dataset: gene expression data from acute leukemia patients, where the true structure is not built in by simulation and has to be discovered, and where the true class labels exist only to check the result afterward, never to guide the fit.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./practice.html" class="pagination-link" aria-label="A practical NMF workflow">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./exercises.html" class="pagination-link" aria-label="NMF on leukemia gene expression data">
+        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

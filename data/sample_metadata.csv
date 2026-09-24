@@ -1,0 +1,181 @@
+sample_id,group,dominant_component
+sample_001,Component 3 dominant,Component 3
+sample_002,Component 3 dominant,Component 3
+sample_003,Component 2 dominant,Component 2
+sample_004,Component 3 dominant,Component 3
+sample_005,Component 1 dominant,Component 1
+sample_006,Component 1 dominant,Component 1
+sample_007,Component 2 dominant,Component 2
+sample_008,Component 2 dominant,Component 2
+sample_009,Component 1 dominant,Component 1
+sample_010,Component 1 dominant,Component 1
+sample_011,Component 3 dominant,Component 3
+sample_012,Component 3 dominant,Component 3
+sample_013,Component 2 dominant,Component 2
+sample_014,Component 1 dominant,Component 1
+sample_015,Component 1 dominant,Component 1
+sample_016,Component 2 dominant,Component 2
+sample_017,Component 1 dominant,Component 1
+sample_018,Mixed,Component 3
+sample_019,Mixed,Component 1
+sample_020,Component 1 dominant,Component 1
+sample_021,Component 1 dominant,Component 1
+sample_022,Component 3 dominant,Component 3
+sample_023,Component 2 dominant,Component 2
+sample_024,Component 3 dominant,Component 3
+sample_025,Component 1 dominant,Component 1
+sample_026,Component 3 dominant,Component 3
+sample_027,Component 3 dominant,Component 3
+sample_028,Mixed,Component 1
+sample_029,Component 3 dominant,Component 3
+sample_030,Component 2 dominant,Component 2
+sample_031,Mixed,Component 2
+sample_032,Component 2 dominant,Component 2
+sample_033,Component 2 dominant,Component 2
+sample_034,Component 1 dominant,Component 1
+sample_035,Component 3 dominant,Component 3
+sample_036,Component 3 dominant,Component 3
+sample_037,Component 2 dominant,Component 2
+sample_038,Component 3 dominant,Component 3
+sample_039,Component 3 dominant,Component 3
+sample_040,Component 2 dominant,Component 2
+sample_041,Mixed,Component 2
+sample_042,Component 1 dominant,Component 1
+sample_043,Component 2 dominant,Component 2
+sample_044,Component 2 dominant,Component 2
+sample_045,Component 2 dominant,Component 2
+sample_046,Component 2 dominant,Component 2
+sample_047,Mixed,Component 3
+sample_048,Mixed,Component 1
+sample_049,Component 3 dominant,Component 3
+sample_050,Component 3 dominant,Component 3
+sample_051,Component 2 dominant,Component 2
+sample_052,Component 2 dominant,Component 2
+sample_053,Component 1 dominant,Component 1
+sample_054,Component 1 dominant,Component 1
+sample_055,Component 1 dominant,Component 1
+sample_056,Mixed,Component 3
+sample_057,Component 3 dominant,Component 3
+sample_058,Mixed,Component 1
+sample_059,Component 1 dominant,Component 1
+sample_060,Component 1 dominant,Component 1
+sample_061,Component 3 dominant,Component 3
+sample_062,Component 2 dominant,Component 2
+sample_063,Component 3 dominant,Component 3
+sample_064,Component 2 dominant,Component 2
+sample_065,Component 2 dominant,Component 2
+sample_066,Component 2 dominant,Component 2
+sample_067,Component 1 dominant,Component 1
+sample_068,Mixed,Component 3
+sample_069,Mixed,Component 1
+sample_070,Component 3 dominant,Component 3
+sample_071,Component 2 dominant,Component 2
+sample_072,Component 2 dominant,Component 2
+sample_073,Component 3 dominant,Component 3
+sample_074,Component 2 dominant,Component 2
+sample_075,Component 2 dominant,Component 2
+sample_076,Component 3 dominant,Component 3
+sample_077,Component 1 dominant,Component 1
+sample_078,Component 2 dominant,Component 2
+sample_079,Component 1 dominant,Component 1
+sample_080,Component 2 dominant,Component 2
+sample_081,Component 1 dominant,Component 1
+sample_082,Component 2 dominant,Component 2
+sample_083,Component 1 dominant,Component 1
+sample_084,Component 1 dominant,Component 1
+sample_085,Component 1 dominant,Component 1
+sample_086,Component 3 dominant,Component 3
+sample_087,Component 2 dominant,Component 2
+sample_088,Mixed,Component 2
+sample_089,Component 3 dominant,Component 3
+sample_090,Component 2 dominant,Component 2
+sample_091,Component 2 dominant,Component 2
+sample_092,Component 2 dominant,Component 2
+sample_093,Component 2 dominant,Component 2
+sample_094,Component 1 dominant,Component 1
+sample_095,Component 1 dominant,Component 1
+sample_096,Component 1 dominant,Component 1
+sample_097,Mixed,Component 1
+sample_098,Component 2 dominant,Component 2
+sample_099,Component 3 dominant,Component 3
+sample_100,Component 3 dominant,Component 3
+sample_101,Component 1 dominant,Component 1
+sample_102,Component 3 dominant,Component 3
+sample_103,Component 1 dominant,Component 1
+sample_104,Component 1 dominant,Component 1
+sample_105,Component 3 dominant,Component 3
+sample_106,Component 3 dominant,Component 3
+sample_107,Component 3 dominant,Component 3
+sample_108,Component 2 dominant,Component 2
+sample_109,Component 1 dominant,Component 1
+sample_110,Component 1 dominant,Component 1
+sample_111,Mixed,Component 3
+sample_112,Mixed,Component 2
+sample_113,Component 3 dominant,Component 3
+sample_114,Component 1 dominant,Component 1
+sample_115,Component 2 dominant,Component 2
+sample_116,Component 1 dominant,Component 1
+sample_117,Component 2 dominant,Component 2
+sample_118,Mixed,Component 1
+sample_119,Mixed,Component 3
+sample_120,Component 3 dominant,Component 3
+sample_121,Mixed,Component 2
+sample_122,Component 3 dominant,Component 3
+sample_123,Component 1 dominant,Component 1
+sample_124,Component 3 dominant,Component 3
+sample_125,Component 2 dominant,Component 2
+sample_126,Mixed,Component 3
+sample_127,Component 1 dominant,Component 1
+sample_128,Component 1 dominant,Component 1
+sample_129,Component 1 dominant,Component 1
+sample_130,Component 2 dominant,Component 2
+sample_131,Mixed,Component 2
+sample_132,Component 2 dominant,Component 2
+sample_133,Component 3 dominant,Component 3
+sample_134,Component 3 dominant,Component 3
+sample_135,Component 2 dominant,Component 2
+sample_136,Mixed,Component 3
+sample_137,Component 1 dominant,Component 1
+sample_138,Component 3 dominant,Component 3
+sample_139,Component 1 dominant,Component 1
+sample_140,Mixed,Component 1
+sample_141,Component 2 dominant,Component 2
+sample_142,Component 1 dominant,Component 1
+sample_143,Component 3 dominant,Component 3
+sample_144,Component 3 dominant,Component 3
+sample_145,Component 1 dominant,Component 1
+sample_146,Component 3 dominant,Component 3
+sample_147,Component 3 dominant,Component 3
+sample_148,Component 3 dominant,Component 3
+sample_149,Component 2 dominant,Component 2
+sample_150,Component 1 dominant,Component 1
+sample_151,Mixed,Component 3
+sample_152,Component 1 dominant,Component 1
+sample_153,Component 1 dominant,Component 1
+sample_154,Mixed,Component 3
+sample_155,Component 2 dominant,Component 2
+sample_156,Component 3 dominant,Component 3
+sample_157,Component 3 dominant,Component 3
+sample_158,Component 2 dominant,Component 2
+sample_159,Mixed,Component 2
+sample_160,Component 3 dominant,Component 3
+sample_161,Component 1 dominant,Component 1
+sample_162,Mixed,Component 1
+sample_163,Mixed,Component 2
+sample_164,Mixed,Component 2
+sample_165,Component 2 dominant,Component 2
+sample_166,Component 2 dominant,Component 2
+sample_167,Component 2 dominant,Component 2
+sample_168,Component 3 dominant,Component 3
+sample_169,Mixed,Component 2
+sample_170,Mixed,Component 3
+sample_171,Component 3 dominant,Component 3
+sample_172,Component 3 dominant,Component 3
+sample_173,Component 1 dominant,Component 1
+sample_174,Component 3 dominant,Component 3
+sample_175,Component 3 dominant,Component 3
+sample_176,Component 1 dominant,Component 1
+sample_177,Component 2 dominant,Component 2
+sample_178,Component 1 dominant,Component 1
+sample_179,Component 2 dominant,Component 2
+sample_180,Component 1 dominant,Component 1

@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>1&nbsp; NMF – Non-negative Matrix Factorization (NMF)</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./practice.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6d144699ee5a3f285c99b12d480471d8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./intuition.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Non-negative Matrix Factorization (NMF)</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intuition.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mathematics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./exercises.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#a-dataset-with-more-measurements-than-underlying-processes" id="toc-a-dataset-with-more-measurements-than-underlying-processes" class="nav-link active" data-scroll-target="#a-dataset-with-more-measurements-than-underlying-processes"><span class="header-section-number">1.1</span> A dataset with more measurements than underlying processes</a></li>
+  <li><a href="#one-patient-built-from-three-programs" id="toc-one-patient-built-from-three-programs" class="nav-link" data-scroll-target="#one-patient-built-from-three-programs"><span class="header-section-number">1.2</span> One patient, built from three programs</a></li>
+  <li><a href="#two-things-learned-at-once" id="toc-two-things-learned-at-once" class="nav-link" data-scroll-target="#two-things-learned-at-once"><span class="header-section-number">1.3</span> Two things learned at once</a></li>
+  <li><a href="#seeing-w-and-h" id="toc-seeing-w-and-h" class="nav-link" data-scroll-target="#seeing-w-and-h"><span class="header-section-number">1.4</span> Seeing W and H</a></li>
+  <li><a href="#reading-h-and-w" id="toc-reading-h-and-w" class="nav-link" data-scroll-target="#reading-h-and-w"><span class="header-section-number">1.5</span> Reading H and W</a>
+  <ul class="collapse">
+  <li><a href="#a-caution-about-comparing-raw-w-values" id="toc-a-caution-about-comparing-raw-w-values" class="nav-link" data-scroll-target="#a-caution-about-comparing-raw-w-values"><span class="header-section-number">1.5.1</span> A caution about comparing raw W values</a></li>
+  <li><a href="#reading-an-nmf-score-plot" id="toc-reading-an-nmf-score-plot" class="nav-link" data-scroll-target="#reading-an-nmf-score-plot"><span class="header-section-number">1.5.2</span> Reading an NMF score plot</a></li>
+  <li><a href="#reading-features-from-h" id="toc-reading-features-from-h" class="nav-link" data-scroll-target="#reading-features-from-h"><span class="header-section-number">1.5.3</span> Reading features from H</a></li>
+  <li><a href="#putting-it-together" id="toc-putting-it-together" class="nav-link" data-scroll-target="#putting-it-together"><span class="header-section-number">1.5.4</span> Putting it together</a></li>
+  </ul></li>
+  <li><a href="#dimensionality-reduction" id="toc-dimensionality-reduction" class="nav-link" data-scroll-target="#dimensionality-reduction"><span class="header-section-number">1.6</span> Dimensionality reduction</a></li>
+  <li><a href="#what-nmf-preserves" id="toc-what-nmf-preserves" class="nav-link" data-scroll-target="#what-nmf-preserves"><span class="header-section-number">1.7</span> What NMF preserves</a></li>
+  <li><a href="#comparison-with-pca" id="toc-comparison-with-pca" class="nav-link" data-scroll-target="#comparison-with-pca"><span class="header-section-number">1.8</span> Comparison with PCA</a></li>
+  <li><a href="#is-nmf-linear-or-nonlinear" id="toc-is-nmf-linear-or-nonlinear" class="nav-link" data-scroll-target="#is-nmf-linear-or-nonlinear"><span class="header-section-number">1.9</span> Is NMF linear or nonlinear?</a></li>
+  <li><a href="#when-nmf-is-useful-and-when-it-is-not" id="toc-when-nmf-is-useful-and-when-it-is-not" class="nav-link" data-scroll-target="#when-nmf-is-useful-and-when-it-is-not"><span class="header-section-number">1.10</span> When NMF is useful, and when it is not</a></li>
+  <li><a href="#preprocessing-nmf-needs-non-negative-input" id="toc-preprocessing-nmf-needs-non-negative-input" class="nav-link" data-scroll-target="#preprocessing-nmf-needs-non-negative-input"><span class="header-section-number">1.11</span> Preprocessing: NMF needs non-negative input</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="a-dataset-with-more-measurements-than-underlying-processes" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="a-dataset-with-more-measurements-than-underlying-processes"><span class="header-section-number">1.1</span> A dataset with more measurements than underlying processes</h2>
+<p>Suppose a hospital has measured the activity of thousands of genes in each of several hundred patients. Each row is a patient. Each column is a gene. Every value is non-negative: a gene is measured as expressed at some level, never at a negative level.</p>
+<p>Thousands of genes do not mean thousands of independent biological processes. Many genes rise and fall together because they belong to a shared underlying program. A set of immune-related genes tends to go up together when immune activity increases. A set of proliferation-related genes tends to go up together when cells are dividing more. A patient’s full expression profile can often be described, reasonably well, as a combination of a much smaller number of such programs.</p>
+<p>Imagine three such programs: immune activity, proliferation, and metabolic activity. A given patient might have a lot of immune activity, only a little proliferation, and a moderate amount of metabolic activity. Another patient might be the reverse. The measured genes are just the visible trace of these programs acting, in different amounts, in different patients.</p>
+</section>
+<section id="one-patient-built-from-three-programs" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="one-patient-built-from-three-programs"><span class="header-section-number">1.2</span> One patient, built from three programs</h2>
+<p>To make this concrete, consider a simulated dataset: three underlying programs, each with its own characteristic pattern across a set of measured features, combined in different proportions for each patient. We will call them Program 1, 2 and 3 for now.</p>
+<div class="visual-card">
+<div id="fig-additive" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Four stacked panels. The top three show each program's characteristic pattern across features, scaled by that program's amount in this patient. The bottom panel shows the sum of the three, which is the patient's measured profile.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-additive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/01-latent-programs-additive.svg" class="img-fluid figure-img" alt="Four stacked panels. The top three show each program's characteristic pattern across features, scaled by that program's amount in this patient. The bottom panel shows the sum of the three, which is the patient's measured profile.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-additive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.1: One patient’s measured profile is the sum of three programs, each scaled by how much of it this patient has.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-additive" class="quarto-xref">Figure&nbsp;<span>1.1</span></a> shows one patient. The top three panels are the three programs, each already scaled by how much of it this particular patient has: a large amount of Program 1, very little of Program 2, and a moderate amount of Program 3. The bottom panel is their sum, which is what actually gets measured. Nothing about the bottom panel directly reveals the three ingredients that produced it. Recovering them is the problem NMF is built to solve.</p>
+</section>
+<section id="two-things-learned-at-once" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="two-things-learned-at-once"><span class="header-section-number">1.3</span> Two things learned at once</h2>
+<p>NMF is given only the measured data, the equivalent of the bottom panel in <a href="#fig-additive" class="quarto-xref">Figure&nbsp;<span>1.1</span></a>, repeated across every patient. It does not know the three programs in advance, and it does not know how much of each program any particular patient has. It has to learn both at the same time:</p>
+<ul>
+<li>what the programs themselves look like, across all the measured features</li>
+<li>how much of each program is present in each patient</li>
+</ul>
+<p>These two things get names. The programs’ patterns across features are collected into a matrix called <strong>H</strong>. How much of each program is present in each patient is collected into a matrix called <strong>W</strong>. Put in words, before any equation:</p>
+<ul>
+<li><strong>H</strong> describes what each program looks like across the original measurements.</li>
+<li><strong>W</strong> describes how much of each program is present in each sample.</li>
+</ul>
+</section>
+<section id="seeing-w-and-h" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="seeing-w-and-h"><span class="header-section-number">1.4</span> Seeing W and H</h2>
+<p>A heatmap of the original data, a small heatmap of W, and a small heatmap of H, side by side, make this concrete.</p>
+<div class="visual-card">
+<div id="fig-data-heatmap" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A heatmap with patients as rows, grouped by which program dominates them, and features as columns. Each group of rows shows elevated values in a different range of columns.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-data-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/02-original-data-heatmap.svg" class="img-fluid figure-img" alt="A heatmap with patients as rows, grouped by which program dominates them, and features as columns. Each group of rows shows elevated values in a different range of columns.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-data-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.2: A small look at the measured data: patients in rows, measured features in columns.
+</figcaption>
+</figure>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-w-heatmap" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A narrow heatmap with the same patients as rows and three columns, one per program. Each patient's row is bright in the column of whichever program dominates that patient.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-w-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/03-scores-heatmap.svg" class="img-fluid figure-img" alt="A narrow heatmap with the same patients as rows and three columns, one per program. Each patient's row is bright in the column of whichever program dominates that patient.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-w-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.3: How much of each program is present in each patient (W), same patient order as above.
+</figcaption>
+</figure>
+</div>
+<div id="fig-h-heatmap" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A heatmap with three rows, one per program, and the same measured features as columns. Each row has its own block of features where it is bright.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-h-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/04-profiles-heatmap.svg" class="img-fluid figure-img" alt="A heatmap with three rows, one per program, and the same measured features as columns. Each row has its own block of features where it is bright.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-h-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.4: What each program looks like across the measured features (H).
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-w-heatmap" class="quarto-xref">Figure&nbsp;<span>1.3</span></a> and <a href="#fig-h-heatmap" class="quarto-xref">Figure&nbsp;<span>1.4</span></a> always mean the same thing in this course, and Program 1 in one is Program 1 in the other. <a href="#fig-data-heatmap" class="quarto-xref">Figure&nbsp;<span>1.2</span></a> is the only thing NMF ever sees. <a href="#fig-w-heatmap" class="quarto-xref">Figure&nbsp;<span>1.3</span></a> and <a href="#fig-h-heatmap" class="quarto-xref">Figure&nbsp;<span>1.4</span></a> are what it learns to produce.</p>
+</section>
+<section id="reading-h-and-w" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="reading-h-and-w"><span class="header-section-number">1.5</span> Reading H and W</h2>
+<p>The heatmaps above show the idea at a glance. A small example, worked through completely, shows the mechanics: exactly how one row of <code>H</code> and one row of <code>W</code> combine into a measurement.</p>
+<p>Suppose there are only four genes, <span class="math inline">\(G_1\)</span>, <span class="math inline">\(G_2\)</span>, <span class="math inline">\(G_3\)</span>, <span class="math inline">\(G_4\)</span>, and two components, with component profiles</p>
+<p><span class="math display">\[
+H=
+\begin{bmatrix}
+1.0 &amp; 0.8 &amp; 0.1 &amp; 0.0\\
+0.0 &amp; 0.1 &amp; 0.9 &amp; 1.0
+\end{bmatrix}.
+\]</span></p>
+<p>Row 1 of <span class="math inline">\(H\)</span> is <span class="math inline">\(H_1=[1.0,\ 0.8,\ 0.1,\ 0.0]\)</span>. Its large weights sit on <span class="math inline">\(G_1\)</span> and <span class="math inline">\(G_2\)</span>, so those two genes are what define Component 1. Row 2 is <span class="math inline">\(H_2=[0.0,\ 0.1,\ 0.9,\ 1.0]\)</span>, with its large weights on <span class="math inline">\(G_3\)</span> and <span class="math inline">\(G_4\)</span>.</p>
+<p>Only now, having looked at which genes each row actually weights heavily, does it make sense to attach a biological label. If <span class="math inline">\(G_1\)</span> and <span class="math inline">\(G_2\)</span> happen to be immune-related genes, Component 1 could reasonably be called an immune-like program. If <span class="math inline">\(G_3\)</span> and <span class="math inline">\(G_4\)</span> are proliferation-related, Component 2 could be called a proliferation-like program. NMF itself never sees the words “immune” or “proliferation.” It only ever works with the numbers in <span class="math inline">\(H\)</span>. The biological label is something a person adds afterward, by inspecting which features came out on top, and it is only as good as that inspection.</p>
+<p>Now four patients, each described by one row of <code>W</code>:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: right;">Component 1</th>
+<th style="text-align: right;">Component 2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Patient 1</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td>Patient 2</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.5</td>
+</tr>
+<tr class="odd">
+<td>Patient 3</td>
+<td style="text-align: right;">0.5</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td>Patient 4</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3</td>
+</tr>
+</tbody>
+</table>
+<p>Patient 1 has a large Component 1 score and a small Component 2 score. Patient 3 is the reverse. Patient 4 has a similar amount of both, and genuinely uses both components rather than being dominated by one.</p>
+<p>Reconstructing Patient 1’s profile means taking 5 parts of <span class="math inline">\(H_1\)</span> and 1 part of <span class="math inline">\(H_2\)</span> and adding them:</p>
+<p><span class="math display">\[
+\hat x_1 \approx 5H_1+1H_2.
+\]</span></p>
+<p><span class="math display">\[
+5H_1=[5.0,\ 4.0,\ 0.5,\ 0.0],\qquad 1H_2=[0.0,\ 0.1,\ 0.9,\ 1.0],
+\]</span></p>
+<p><span class="math display">\[
+\hat x_1=[5.0,\ 4.1,\ 1.4,\ 1.0].
+\]</span></p>
+<p>Patient 1 ends up with high reconstructed values at <span class="math inline">\(G_1\)</span> and <span class="math inline">\(G_2\)</span> for a simple reason: this patient has a large Component 1 score, and <span class="math inline">\(G_1\)</span>, <span class="math inline">\(G_2\)</span> are exactly the genes Component 1 weights heavily. High expression at those two genes is not a separate fact about the patient needing its own explanation. It follows directly from one number, 5, multiplying the row of <span class="math inline">\(H\)</span> that already favours those genes.</p>
+<p>Patient 3 works the same way, with the two components’ importance reversed:</p>
+<p><span class="math display">\[
+\hat x_3 \approx 0.5H_1+6H_2 = [0.5,\ 1.0,\ 5.45,\ 6.0].
+\]</span></p>
+<p><span class="math inline">\(G_3\)</span> and <span class="math inline">\(G_4\)</span> dominate this patient’s reconstructed profile, because Patient 3’s large score sits on Component 2, and Component 2 is the row of <span class="math inline">\(H\)</span> that weights <span class="math inline">\(G_3\)</span> and <span class="math inline">\(G_4\)</span> heavily.</p>
+<p>Three relationships are worth keeping, stated in general rather than just for this example:</p>
+<p><span class="math display">\[
+\boxed{H_{rj}=\text{how strongly feature }j\text{ belongs to component }r}
+\]</span></p>
+<p><span class="math display">\[
+\boxed{W_{ir}=\text{the coefficient used for component }r\text{ when reconstructing sample }i}
+\]</span></p>
+<p><span class="math display">\[
+\boxed{\hat X_{ij}=\sum_r W_{ir}H_{rj}}
+\]</span></p>
+<section id="a-caution-about-comparing-raw-w-values" class="level3" data-number="1.5.1">
+<h3 data-number="1.5.1" class="anchored" data-anchor-id="a-caution-about-comparing-raw-w-values"><span class="header-section-number">1.5.1</span> A caution about comparing raw W values</h3>
+<p>It is tempting to look at Patient 1’s row, <span class="math inline">\(W_1=[5,1]\)</span>, and conclude that this patient has five times more of Component 1 than Component 2. That conclusion does not follow, and the reason matters.</p>
+<p>The scale of a column of <span class="math inline">\(W\)</span> depends entirely on the scale of the matching row of <span class="math inline">\(H\)</span>. Suppose, hypothetically, a fit produced the same scores <span class="math inline">\(W_i=[5,1]\)</span>, but with</p>
+<p><span class="math display">\[
+H_1=[1,1,1],\qquad H_2=[100,100,100].
+\]</span></p>
+<p>Component 1’s contribution to this sample would then be <span class="math inline">\(5H_1=[5,5,5]\)</span>, while Component 2’s contribution is <span class="math inline">\(1H_2=[100,100,100]\)</span>, twenty times larger, despite Component 2 having the smaller <span class="math inline">\(W\)</span> score of the two. The actual contribution of component <span class="math inline">\(r\)</span> to sample <span class="math inline">\(i\)</span> is</p>
+<p><span class="math display">\[
+\boxed{W_{ir}H_{r\cdot},}
+\]</span></p>
+<p>the score and the profile together, never the score alone.</p>
+<p>This is a preview of something the mathematics chapter derives properly. Multiplying every entry of one column of <span class="math inline">\(W\)</span> by a positive constant and dividing the matching row of <span class="math inline">\(H\)</span> by the same constant leaves <span class="math inline">\(WH\)</span> completely unchanged,</p>
+<p><span class="math display">\[
+WH=(WD)(D^{-1}H).
+\]</span></p>
+<p>Raw <span class="math inline">\(W\)</span> values are only informative relative to the scale of their matching row of <span class="math inline">\(H\)</span>. If every row of <span class="math inline">\(H\)</span> has been normalized to a comparable scale, comparing <span class="math inline">\(W\)</span> scores across components becomes reasonable. Otherwise, avoid saying “this sample has more of Component 1 than Component 2” from the raw <span class="math inline">\(W\)</span> values alone.</p>
+</section>
+<section id="reading-an-nmf-score-plot" class="level3" data-number="1.5.2">
+<h3 data-number="1.5.2" class="anchored" data-anchor-id="reading-an-nmf-score-plot"><span class="header-section-number">1.5.2</span> Reading an NMF score plot</h3>
+<p>The four patients’ scores can be placed directly on a two-dimensional plot, <span class="math inline">\(x=W_{\cdot1}\)</span> against <span class="math inline">\(y=W_{\cdot2}\)</span>.</p>
+<div class="visual-card">
+<div id="fig-score-plot-toy" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A scatter plot with four labelled points. Patient 1 sits far to the right and low, Patient 3 sits low and far up, Patient 2 sits similarly to Patient 1 but slightly closer to the origin, and Patient 4 sits partway between the two axes.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-score-plot-toy-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/26-nmf-score-plot-toy.svg" class="img-fluid figure-img" alt="A scatter plot with four labelled points. Patient 1 sits far to the right and low, Patient 3 sits low and far up, Patient 2 sits similarly to Patient 1 but slightly closer to the origin, and Patient 4 sits partway between the two axes.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-score-plot-toy-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.5: The four patients placed by their Component 1 and Component 2 scores.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>In <a href="#fig-score-plot-toy" class="quarto-xref">Figure&nbsp;<span>1.5</span></a>, Patients 1 and 2 sit toward the right, where Component 1 is large. Patient 3 sits toward the top, where Component 2 is large. Patient 4 sits between the two, matching its balanced score. If Component 1 has already been read from <span class="math inline">\(H\)</span> as an immune-like program, a patient further to the right can reasonably be described as having a stronger score on that program, provided the axes are on a comparable scale to begin with.</p>
+<p>It is worth being precise about how this differs from a PCA plot, even though both are two-dimensional scatter plots of scores. Separation along PC1 means separation along the direction in the original feature space that captures the most variance. Separation along <span class="math inline">\(W_{\cdot1}\)</span> means separation in the coefficient attached to one specific, non-negative, learned component. Nothing here has been optimized to capture variance, and <span class="math inline">\(W_{\cdot1}\)</span> is not “the most important” NMF component. Component numbers are arbitrary labels, not a ranking.</p>
+</section>
+<section id="reading-features-from-h" class="level3" data-number="1.5.3">
+<h3 data-number="1.5.3" class="anchored" data-anchor-id="reading-features-from-h"><span class="header-section-number">1.5.3</span> Reading features from H</h3>
+<p>Ranking one row of <span class="math inline">\(H\)</span> from largest to smallest weight is the most basic form of feature interpretation available in NMF. For Component 1,</p>
+<p><span class="math display">\[
+G_1=1.0,\quad G_2=0.8,\quad G_3=0.1,\quad G_4=0.0,
+\]</span></p>
+<p>so <span class="math inline">\(G_1\)</span> and <span class="math inline">\(G_2\)</span> are its two defining features.</p>
+<p>A large weight is not quite the same thing as a feature that is specific to one component. Compare two hypothetical genes, each shown as its own two-component row of <span class="math inline">\(H\)</span>:</p>
+<p><span class="math display">\[
+\text{Gene A}=[0.9,\ 0.05],\qquad \text{Gene B}=[0.9,\ 0.85].
+\]</span></p>
+<p>Gene A has a high weight in Component 1 and a low weight in Component 2. It is specific to Component 1, and a good candidate for defining what that component means. Gene B has a comparably high weight in both components. It contributes to the reconstruction either way, but it does little to distinguish one component from the other.</p>
+<p>It would be a mistake to treat this ranking as automatic variable selection. Ordinary NMF is free to give many features a modest positive weight in more than one component, the way Gene B does here, and it will not zero any of them out on its own. Sparsity, where most weights in a row of <span class="math inline">\(H\)</span> are pushed to exactly zero, is something specific methods such as sparse NMF, or an added regularization penalty, aim for deliberately. It is not a property ordinary NMF is guaranteed to have.</p>
+</section>
+<section id="putting-it-together" class="level3" data-number="1.5.4">
+<h3 data-number="1.5.4" class="anchored" data-anchor-id="putting-it-together"><span class="header-section-number">1.5.4</span> Putting it together</h3>
+<div class="visual-card">
+<div id="fig-wh-schematic" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three small heatmaps connected by multiplication and equals signs: W, four patients by two components, times H, two components by four genes, equals a four by four reconstructed matrix. Each cell shows its numeric value.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-wh-schematic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/27-wh-schematic.svg" class="img-fluid figure-img" alt="Three small heatmaps connected by multiplication and equals signs: W, four patients by two components, times H, two components by four genes, equals a four by four reconstructed matrix. Each cell shows its numeric value.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-wh-schematic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.6: H defines what each component looks like, W gives each sample’s coefficients, and WH adds every component’s contribution back together.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-wh-schematic" class="quarto-xref">Figure&nbsp;<span>1.6</span></a> is the whole example in one picture. <span class="math inline">\(H\)</span> defines what each component looks like across the four genes. <span class="math inline">\(W\)</span> gives each patient’s coefficient for each component. Multiplying a patient’s row of <span class="math inline">\(W\)</span> by the matching row of <span class="math inline">\(H\)</span>, one component at a time, and adding the results, is exactly the arithmetic worked through above. Applied to every patient and every gene at once, that same arithmetic is <span class="math inline">\(WH\)</span>, the reconstructed data this chapter has been building toward.</p>
+</section>
+</section>
+<section id="dimensionality-reduction" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="dimensionality-reduction"><span class="header-section-number">1.6</span> Dimensionality reduction</h2>
+<p>A patient in <a href="#fig-data-heatmap" class="quarto-xref">Figure&nbsp;<span>1.2</span></a> is described by every measured feature, potentially thousands of numbers. After NMF, that same patient can be described by just three numbers: how much of Program 1, how much of Program 2, how much of Program 3. That row of three numbers is the corresponding row of <strong>W</strong>. This is what “dimensionality reduction” means here: a long, detailed measurement is replaced by a short, structured summary.</p>
+<p>Because that summary only has three numbers per patient in this example, two of them can be plotted directly against each other.</p>
+<div class="visual-card">
+<div id="fig-score-plot" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A scatter plot with amount of Program 1 on the x-axis and amount of Program 2 on the y-axis. Patients dominated by Program 1 sit far along the x-axis, patients dominated by Program 2 sit far along the y-axis, patients dominated by Program 3 sit near the origin of both axes, and mixed patients sit between the groups.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-score-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/05-nmf-score-plot.svg" class="img-fluid figure-img" alt="A scatter plot with amount of Program 1 on the x-axis and amount of Program 2 on the y-axis. Patients dominated by Program 1 sit far along the x-axis, patients dominated by Program 2 sit far along the y-axis, patients dominated by Program 3 sit near the origin of both axes, and mixed patients sit between the groups.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-score-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.7: Every patient placed according to how much of Program 1 and Program 2 it contains.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>This is the same plot as <a href="#fig-score-plot-toy" class="quarto-xref">Figure&nbsp;<span>1.5</span></a>, at the scale of hundreds of patients and thousands of genes rather than four patients and four genes. Moving to the right in <a href="#fig-score-plot" class="quarto-xref">Figure&nbsp;<span>1.7</span></a> means containing more of Program 1. Moving up means containing more of Program 2. A patient near the origin of both axes is not “low” in some absolute sense. It only means low on these two particular programs. Such a patient could still score high on Program 3, which is not shown in this two-dimensional view. And as already seen in the example, nothing about the order in which components are numbered corresponds to how much of the data they explain: Program 1 is not automatically bigger, stronger, or more informative than Program 3.</p>
+</section>
+<section id="what-nmf-preserves" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="what-nmf-preserves"><span class="header-section-number">1.7</span> What NMF preserves</h2>
+<p>It helps to be precise about what NMF is actually optimizing for, in words, before any equation appears. NMF is primarily trying to keep enough information in <strong>W</strong> and <strong>H</strong> that multiplying them back together reproduces the original measurements reasonably well.</p>
+<p>It is not explicitly trying to keep pairs of similar patients close together. It is not explicitly trying to preserve who each patient’s nearest neighbours are. It is not maximizing variance the way some other methods do. The reduced scores in <strong>W</strong> are useful because, combined with the learned programs in <strong>H</strong>, they can reconstruct something close to the original data.</p>
+<div class="visual-card">
+<div id="fig-reconstruction" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three stacked panels for one patient: the observed profile, the reconstructed profile from the fitted W and H, and the residual difference between them, which is small and has no obvious remaining pattern.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-reconstruction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/06-reconstruction-example.svg" class="img-fluid figure-img" alt="Three stacked panels for one patient: the observed profile, the reconstructed profile from the fitted W and H, and the residual difference between them, which is small and has no obvious remaining pattern.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-reconstruction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.8: One patient’s observed profile, its reconstruction from W and H, and the difference between them.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-reconstruction" class="quarto-xref">Figure&nbsp;<span>1.8</span></a> shows one patient’s observed profile, what an NMF fit reconstructs for that patient from its three-number summary and the learned programs, and the difference between the two. The reconstruction does not match the observation exactly. It is close enough that the leftover difference has no obvious structure of its own, which is the practical sense in which the three-number summary “worked”: it kept what mattered for rebuilding the measurement, at the cost of some fine detail.</p>
+</section>
+<section id="comparison-with-pca" class="level2" data-number="1.8">
+<h2 data-number="1.8" class="anchored" data-anchor-id="comparison-with-pca"><span class="header-section-number">1.8</span> Comparison with PCA</h2>
+<p>PCA is the more familiar dimensionality reduction method, and the comparison is worth making carefully. PCA is often the better default choice when the goal is efficient dimensionality reduction, a quick visualization, or finding the directions along which a dataset varies the most. It has no restriction on sign: its scores and its loadings can both be positive or negative.</p>
+<p>NMF gives up that flexibility on purpose. Every score in <strong>W</strong> and every entry in <strong>H</strong> must be non-negative. This matters when negative amounts would not make sense for the data being described. A tissue sample can plausibly contain a large amount of one molecular signature and a small amount of another, but it cannot contain a negative amount of either. A patient cannot have negative immune activity. Where quantities are genuinely non-negative and additive, forcing the model to respect that can make its output easier to interpret, closer to a list of ingredients than to a set of abstract directions.</p>
+<div class="visual-card">
+<div id="fig-pca-nmf-geometry" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two panels sharing the same two-feature non-negative point cloud. Left: PCA fits one line through the data, extending in both the positive and the negative direction. Right: NMF fits two non-negative basis directions, and only the shaded wedge between them, positive combinations of the two, is reachable.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca-nmf-geometry-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/07-pca-vs-nmf-geometry.svg" class="img-fluid figure-img" alt="Two panels sharing the same two-feature non-negative point cloud. Left: PCA fits one line through the data, extending in both the positive and the negative direction. Right: NMF fits two non-negative basis directions, and only the shaded wedge between them, positive combinations of the two, is reachable.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pca-nmf-geometry-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.9: The same idea of a low-dimensional summary, drawn geometrically for PCA and for NMF.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-pca-nmf-geometry" class="quarto-xref">Figure&nbsp;<span>1.9</span></a> shows the difference geometrically, on a small dataset with only two non-negative measured features. PCA’s line runs through the data in both directions, positive and negative. NMF’s two basis directions only reach the shaded wedge between them: every non-negative combination of the two, and nothing outside it.</p>
+<p>None of this means NMF components are always sparse, always interpretable, or always aligned with real biological programs. Whether that happens depends on the data and on how well the assumed number of components matches the actual structure present. NMF makes a particular kind of interpretation <em>available</em>. It does not guarantee it.</p>
+</section>
+<section id="is-nmf-linear-or-nonlinear" class="level2" data-number="1.9">
+<h2 data-number="1.9" class="anchored" data-anchor-id="is-nmf-linear-or-nonlinear"><span class="header-section-number">1.9</span> Is NMF linear or nonlinear?</h2>
+<p>This is worth answering directly, because the word “nonlinear” gets attached to NMF more often than it should. NMF is a <strong>linear</strong> dimensionality reduction method. Every patient’s reconstructed profile is a linear combination of the learned program profiles, exactly as in <a href="#fig-additive" class="quarto-xref">Figure&nbsp;<span>1.1</span></a>: each program contributes an amount, scaled by a single coefficient, and the contributions are added together. The only restriction is that those coefficients, and the program profiles themselves, must be non-negative.</p>
+<p>That restriction changes the <em>geometry</em> of what is reachable, from the full line in PCA’s case to the wedge in NMF’s case, but it does not turn the underlying model into a nonlinear one. Fitting NMF involves a nonconvex optimization problem, meaning it can be genuinely hard to solve and can land on different answers from different starting points. A nonconvex optimization problem is not the same thing as a nonlinear model. NMF is not a manifold-learning or nonlinear-embedding method the way something like UMAP is.</p>
+</section>
+<section id="when-nmf-is-useful-and-when-it-is-not" class="level2" data-number="1.10">
+<h2 data-number="1.10" class="anchored" data-anchor-id="when-nmf-is-useful-and-when-it-is-not"><span class="header-section-number">1.10</span> When NMF is useful, and when it is not</h2>
+<p>NMF fits naturally wherever a measurement and its underlying contributions are both genuinely non-negative and additive: gene expression signatures, mixtures of cell types or contamination sources, molecular programs, parts of an image, or the topic proportions behind a collection of documents. In each of these, “some amount of pattern A plus some amount of pattern B” is a sensible description of the data.</p>
+<p>It is a less natural choice when negative values carry real scientific meaning, such as already-centered residuals or fold changes relative to a baseline. It is also a less natural choice when the actual goal is a variance decomposition (where PCA is the direct tool) or when the structure of interest is expected to be curved or manifold-like rather than a set of additive parts (where methods such as UMAP are built for exactly that). PCA, ICA, and UMAP are mentioned here only to mark out what problem NMF is solving differently, not as competitors to rank against it.</p>
+</section>
+<section id="preprocessing-nmf-needs-non-negative-input" class="level2" data-number="1.11">
+<h2 data-number="1.11" class="anchored" data-anchor-id="preprocessing-nmf-needs-non-negative-input"><span class="header-section-number">1.11</span> Preprocessing: NMF needs non-negative input</h2>
+<p>One practical constraint follows directly from everything above, and it is worth closing on. Standard NMF requires every entry of the input matrix to be non-negative.</p>
+<p>This immediately rules out some very common preprocessing habits. Centering a matrix, subtracting each feature’s mean, produces negative values almost everywhere and is not compatible with ordinary NMF. Standard z-scoring centers and scales, so it inherits the same problem. Adding a large arbitrary constant to force already-signed data to become positive is not a real fix either: it changes the meaning of “zero” and distorts the additive structure NMF is trying to recover.</p>
+<p>A transformation such as <code>log1p</code> is compatible with non-negativity, since it only requires the input to be non-negative to begin with, and it can be a reasonable way to reduce the influence of very large values. Scaling individual features by positive constants is possible without breaking non-negativity, but it is not free: it changes how much each feature contributes to the reconstruction error, and therefore changes the factorization that gets learned.</p>
+<p>For count data specifically, such as sequencing read counts, being non-negative is not the same as being ready to use. Sequencing depth and library size still differ from sample to sample and still need to be accounted for. There is no single preprocessing recipe that is correct for every platform and every question. What matters is keeping every value non-negative while making a deliberate, explainable choice about scaling and normalization, rather than applying a common pipeline built for a method that allows negative values.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Preface">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./practice.html" class="pagination-link" aria-label="A practical NMF workflow">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

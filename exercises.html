@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>4&nbsp; NMF on leukemia gene expression data – Non-negative Matrix Factorization (NMF)</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./mathematics.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6d144699ee5a3f285c99b12d480471d8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./exercises.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Non-negative Matrix Factorization (NMF)</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intuition.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">A practical NMF workflow</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mathematics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./exercises.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-dataset" id="toc-the-dataset" class="nav-link active" data-scroll-target="#the-dataset"><span class="header-section-number">4.1</span> The dataset</a></li>
+  <li><a href="#exercise-1.-load-orient-and-sanity-check-the-data" id="toc-exercise-1.-load-orient-and-sanity-check-the-data" class="nav-link" data-scroll-target="#exercise-1.-load-orient-and-sanity-check-the-data"><span class="header-section-number">4.2</span> Exercise 1. Load, orient, and sanity-check the data</a></li>
+  <li><a href="#exercise-2.-does-more-components-always-reconstruct-better" id="toc-exercise-2.-does-more-components-always-reconstruct-better" class="nav-link" data-scroll-target="#exercise-2.-does-more-components-always-reconstruct-better"><span class="header-section-number">4.3</span> Exercise 2. Does more components always reconstruct better?</a></li>
+  <li><a href="#exercise-3.-rank-survey-with-the-nmf-package" id="toc-exercise-3.-rank-survey-with-the-nmf-package" class="nav-link" data-scroll-target="#exercise-3.-rank-survey-with-the-nmf-package"><span class="header-section-number">4.4</span> Exercise 3. Rank survey with the NMF package</a></li>
+  <li><a href="#exercise-4.-fit-rank-3-and-inspect-the-sample-scores" id="toc-exercise-4.-fit-rank-3-and-inspect-the-sample-scores" class="nav-link" data-scroll-target="#exercise-4.-fit-rank-3-and-inspect-the-sample-scores"><span class="header-section-number">4.5</span> Exercise 4. Fit rank 3 and inspect the sample scores</a></li>
+  <li><a href="#exercise-5.-what-defines-each-component" id="toc-exercise-5.-what-defines-each-component" class="nav-link" data-scroll-target="#exercise-5.-what-defines-each-component"><span class="header-section-number">4.6</span> Exercise 5. What defines each component</a></li>
+  <li><a href="#exercise-6.-visualizing-scores-and-loadings-together" id="toc-exercise-6.-visualizing-scores-and-loadings-together" class="nav-link" data-scroll-target="#exercise-6.-visualizing-scores-and-loadings-together"><span class="header-section-number">4.7</span> Exercise 6. Visualizing scores and loadings together</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">NMF on leukemia gene expression data</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-dataset" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="the-dataset"><span class="header-section-number">4.1</span> The dataset</h2>
+<p>These exercises use the acute leukemia gene expression dataset originally published by Golub et al.&nbsp;(1999) and later used by Brunet, Tamayo, Golub, and Mesirov (2004) to introduce NMF-based molecular pattern discovery in cancer genomics. The version used here, <code>esGolub</code>, is bundled with the R <code>NMF</code> package and is exactly the dataset behind the original Brunet et al.&nbsp;NMF analysis: 38 bone marrow samples, 5,000 genes (already reduced from the original platform’s larger probe set), with expression values floored at 20.</p>
+<p>Every sample carries a diagnosis, acute lymphoblastic leukemia (ALL) or acute myeloid leukemia (AML), and the ALL samples are further split into B-cell and T-cell subtypes.</p>
+<pre><code>ALL AML
+ 27  11
+
+
+        B-cell T-cell
+  ALL       19      8
+  AML        0      0</code></pre>
+<p>These labels are used only to check the result afterward. NMF never receives them during fitting.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Source and citation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Golub, T.R. et al.&nbsp;(1999). Molecular classification of cancer: class discovery and class prediction by gene expression monitoring. <em>Science</em>, 286(5439), 531-537.</p>
+<p>Brunet, J.P., Tamayo, P., Golub, T.R., and Mesirov, J.P. (2004). Metagenes and molecular pattern discovery using matrix factorization. <em>PNAS</em>, 101(12), 4164-4169.</p>
+<p>The exported CSV files used below (<code>golub_expression.csv</code>, <code>golub_metadata.csv</code>, <code>golub_features.csv</code>) were produced once from <code>NMF::esGolub</code> by <code>scripts/generate_golub_data.R</code>, with samples placed in rows to match this course’s convention, so both languages read exactly the same numbers. <code>golub_gene_symbols.csv</code>, used in Exercise 5 to identify what the highest-weighted genes actually are, was produced once by <code>scripts/annotate_golub_genes.R</code> from Bioconductor’s <code>hu6800.db</code> annotation package, which maps this dataset’s original Affymetrix HU6800 probe IDs to gene symbols.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Download the exercise data
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><a href="data/golub_expression.csv" download="golub_expression.csv">Expression matrix</a></li>
+<li><a href="data/golub_metadata.csv" download="golub_metadata.csv">Sample metadata</a></li>
+<li><a href="data/golub_features.csv" download="golub_features.csv">Feature metadata</a></li>
+<li><a href="data/golub_gene_symbols.csv" download="golub_gene_symbols.csv">Gene symbol annotation</a></li>
+</ul>
+<p>Place the downloaded CSV files inside a folder named <code>data</code>.</p>
+</div>
+</div>
+</section>
+<section id="exercise-1.-load-orient-and-sanity-check-the-data" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="exercise-1.-load-orient-and-sanity-check-the-data"><span class="header-section-number">4.2</span> Exercise 1. Load, orient, and sanity-check the data</h2>
+<p><strong>Task.</strong> Load the expression matrix and metadata. Confirm which axis holds samples and which holds genes. Confirm the data is non-negative and free of missing values. Report the dimensions and the class counts above.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Do not assume the orientation from the file name. Check <code>dim()</code>/<code>.shape</code> and compare it against what you already know: 38 samples, 5,000 genes.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/golub_expression.csv"</span>, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/golub_metadata.csv"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(expr)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(X)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">range</span>(X)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(X <span class="sc">&lt;</span> <span class="dv">0</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(X))</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(meta<span class="sc">$</span>ALL_AML)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>[1]   38 5000
+[1]    20 61225
+[1] FALSE
+[1] FALSE
+
+ALL AML
+ 27  11</code></pre>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>expr <span class="op">=</span> pd.read_csv(<span class="st">"data/golub_expression.csv"</span>, index_col<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>meta <span class="op">=</span> pd.read_csv(<span class="st">"data/golub_metadata.csv"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> expr.to_numpy()</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(X.shape)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(X.<span class="bu">min</span>(), X.<span class="bu">max</span>())</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>((X <span class="op">&lt;</span> <span class="dv">0</span>).<span class="bu">any</span>())</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pd.isna(X).<span class="bu">any</span>())</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(meta[<span class="st">"ALL_AML"</span>].value_counts())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>(38, 5000)
+20 61225
+False
+False
+ALL_AML
+ALL    27
+AML    11
+Name: count, dtype: int64</code></pre>
+</div>
+</div>
+</div>
+<p>The matrix is 38 rows by 5,000 columns: samples in rows, genes in columns, this course’s convention, confirmed by matching the row count against the known sample count rather than trusting the column headers. Every value lies between 20 and 61,225, with 20 being a floor built into this version of the dataset by its original preprocessing (Brunet et al.&nbsp;thresholded very low or unreliable readings at this value rather than allowing them to approach zero or go negative). There are no missing values. A missing measurement is not the same thing as a zero measurement, and this dataset happens to have neither.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-2.-does-more-components-always-reconstruct-better" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="exercise-2.-does-more-components-always-reconstruct-better"><span class="header-section-number">4.3</span> Exercise 2. Does more components always reconstruct better?</h2>
+<p><strong>Task.</strong> Fit NMF at <code>k = 2, ..., 8</code> on the full 5,000-gene matrix and plot reconstruction RMSE against <code>k</code>. Does the error ever increase? Does the rank with the lowest error in this sweep have to be the best choice?</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(NNLM)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>ks <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">8</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>err_by_k <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ks, <span class="cf">function</span>(k) {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="fu">nnmf</span>(X, <span class="at">k =</span> k, <span class="at">method =</span> <span class="st">"scd"</span>, <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="at">max.iter =</span> <span class="dv">500</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>((X <span class="sc">-</span> f<span class="sc">$</span>W <span class="sc">%*%</span> f<span class="sc">$</span>H)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(err_by_k) <span class="ot">&lt;-</span> ks</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(err_by_k, <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>    2     3     4     5     6     7     8
+601.1 543.2 494.6 466.8 448.9 425.9 409.0</code></pre>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> NMF</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>errors <span class="op">=</span> {}</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">9</span>):</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> NMF(n_components<span class="op">=</span>k, init<span class="op">=</span><span class="st">"nndsvda"</span>, solver<span class="op">=</span><span class="st">"cd"</span>, beta_loss<span class="op">=</span><span class="st">"frobenius"</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>            max_iter<span class="op">=</span><span class="dv">1000</span>, tol<span class="op">=</span><span class="fl">1e-4</span>, random_state<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    Wk <span class="op">=</span> m.fit_transform(X)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    errors[k] <span class="op">=</span> np.sqrt(np.mean((X <span class="op">-</span> m.inverse_transform(Wk)) <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>errors</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>{2: 601.2, 3: 543.2, 4: 494.7, 5: 467.5, 6: 446.6, 7: 428.0, 8: 410.8}</code></pre>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-rank-error" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A line plot of RMSE against rank k from 2 to 8, decreasing steadily and without a sharp elbow across the whole range.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-rank-error-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/20-golub-rank-vs-error.svg" class="img-fluid figure-img" alt="A line plot of RMSE against rank k from 2 to 8, decreasing steadily and without a sharp elbow across the whole range.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-rank-error-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.1: Reconstruction error against rank on the full 5,000-gene panel.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>The error decreases at every step in <a href="#fig-golub-rank-error" class="quarto-xref">Figure&nbsp;<span>4.1</span></a> and never increases, for the same reason established in Chapter 3: a rank-8 factorization always has at least as much flexibility as a rank-2 one. Unlike the earlier simulation, there is no sharp elbow here at all, only a smooth, gradual decline. Read alone, this curve gives almost no guidance on which <code>k</code> to prefer. Reconstruction error answers “how flexible is this model,” not “how many biologically meaningful patterns does this dataset contain,” and those are different questions. The rank sweep here must be read together with the stability and consensus diagnostics in the next exercise, not on its own.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-3.-rank-survey-with-the-nmf-package" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="exercise-3.-rank-survey-with-the-nmf-package"><span class="header-section-number">4.4</span> Exercise 3. Rank survey with the NMF package</h2>
+<p><strong>Task.</strong> The 5,000-gene matrix makes many repeated NMF fits slow. Reduce to the 1,000 most variable genes, chosen without looking at the ALL/AML labels, and use the <code>NMF</code> package’s rank survey (<code>nrun = 15</code>, the classic Brunet algorithm) to compute a consensus matrix and cophenetic correlation for <code>k = 2, ..., 6</code>. Which rank looks most defensible, and why?</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Filtering must be unsupervised
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The 1,000 genes are chosen by variance across all 38 samples, computed before any use of the ALL/AML or cell-type labels. Filtering by, say, a t-test against the known classes would leak label information into a supposedly unsupervised analysis and would make any later agreement with those same labels circular.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Remember the orientation trap from Chapter 2’s practice: <code>NMF::nmf()</code>’s <code>consensus()</code> clusters the columns of whatever matrix was passed to it. Passing genes-in-rows, samples-in-columns is what makes the consensus matrix a <em>sample</em>-by-sample matrix.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-8-contents" aria-controls="callout-8" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-8" class="callout-8-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(NMF)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>gene_var <span class="ot">&lt;-</span> <span class="fu">apply</span>(X, <span class="dv">2</span>, var)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>top_genes <span class="ot">&lt;-</span> <span class="fu">order</span>(gene_var, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">1000</span>]</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>X_filtered <span class="ot">&lt;-</span> X[, top_genes]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>survey <span class="ot">&lt;-</span> <span class="fu">nmf</span>(<span class="fu">t</span>(X_filtered), <span class="at">rank =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">nrun =</span> <span class="dv">15</span>, <span class="at">method =</span> <span class="st">"brunet"</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>coph <span class="ot">&lt;-</span> <span class="fu">sapply</span>(survey<span class="sc">$</span>fit, cophcor)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(coph) <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">6</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(coph, <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>     2      3      4      5      6
+0.9908 1.0000 0.9686 0.9833 0.9790</code></pre>
+</div>
+<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
+<p><code>scikit-learn</code> has no built-in consensus-survey function, but the same idea, repeated fits, a consensus matrix, a cophenetic correlation from hierarchical clustering, is a direct port using <code>scipy</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> NMF</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.cluster.hierarchy <span class="im">import</span> linkage, cophenet</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.spatial.distance <span class="im">import</span> squareform</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>gene_var <span class="op">=</span> X.var(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>top_genes <span class="op">=</span> np.argsort(gene_var)[::<span class="op">-</span><span class="dv">1</span>][:<span class="dv">1000</span>]</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>X_filtered <span class="op">=</span> X[:, top_genes]</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> X_filtered.shape[<span class="dv">0</span>]</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cophenetic_correlation(X, k, n_runs<span class="op">=</span><span class="dv">15</span>, seed0<span class="op">=</span><span class="dv">123</span>):</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    same_component <span class="op">=</span> np.zeros((n, n))</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_runs):</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>        m <span class="op">=</span> NMF(n_components<span class="op">=</span>k, init<span class="op">=</span><span class="st">"random"</span>, solver<span class="op">=</span><span class="st">"mu"</span>, beta_loss<span class="op">=</span><span class="st">"kullback-leibler"</span>,</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                max_iter<span class="op">=</span><span class="dv">200</span>, random_state<span class="op">=</span>seed0 <span class="op">+</span> i)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        labels <span class="op">=</span> m.fit_transform(X).argmax(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        same_component <span class="op">+=</span> (labels[:, <span class="va">None</span>] <span class="op">==</span> labels[<span class="va">None</span>, :])</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    consensus <span class="op">=</span> same_component <span class="op">/</span> n_runs</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    condensed <span class="op">=</span> squareform(<span class="dv">1</span> <span class="op">-</span> consensus, checks<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    linkage_matrix <span class="op">=</span> linkage(condensed, method<span class="op">=</span><span class="st">"average"</span>)</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    coph_corr, _ <span class="op">=</span> cophenet(linkage_matrix, condensed)</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> coph_corr</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>{k: <span class="bu">round</span>(cophenetic_correlation(X_filtered, k), <span class="dv">4</span>) <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">7</span>)}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>{2: 0.9923, 3: 0.9965, 4: 0.9553, 5: 0.9411, 6: 0.9542}</code></pre>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-consensus" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three panels. The first two are consensus heatmaps for k=2 and k=3, samples grouped into ALL-B-cell, ALL-T-cell, and AML blocks. The k=3 matrix shows three sharp, clean blocks along the diagonal with almost no mixing between them, more so than the k=2 matrix. The third panel plots cophenetic correlation against rank, peaking at exactly 1.0 at k=3 and lower at every other rank tried.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-consensus-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/21-golub-consensus-cophenetic.svg" class="img-fluid figure-img" alt="Three panels. The first two are consensus heatmaps for k=2 and k=3, samples grouped into ALL-B-cell, ALL-T-cell, and AML blocks. The k=3 matrix shows three sharp, clean blocks along the diagonal with almost no mixing between them, more so than the k=2 matrix. The third panel plots cophenetic correlation against rank, peaking at exactly 1.0 at k=3 and lower at every other rank tried.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-consensus-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.2: Consensus matrices at k=2 and k=3, and cophenetic correlation against rank.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><code>k = 3</code> reaches a cophenetic correlation of exactly 1.0000 in R’s built-in survey, the unique peak across the ranks tried, and its consensus matrix in <a href="#fig-golub-consensus" class="quarto-xref">Figure&nbsp;<span>4.2</span></a> shows three clean, sharply bounded blocks with almost no cross-block mixing. The Python port, a different algorithm (KL-based multiplicative updates, hard <code>argmax</code> co-clustering, average-linkage cophenetic correlation, rather than R’s own consensus machinery), agrees on the qualitative answer, <code>k = 3</code> scores highest, without matching R’s numbers exactly.</p>
+<section id="reading-a-consensus-matrix" class="level3" data-number="4.4.1">
+<h3 data-number="4.4.1" class="anchored" data-anchor-id="reading-a-consensus-matrix"><span class="header-section-number">4.4.1</span> Reading a consensus matrix</h3>
+<p>A consensus matrix entry <span class="math inline">\((i, j)\)</span> is the fraction of the 15 fits in which samples <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> ended up in the same component, so every entry runs from 0 (never together) to 1 (always together). A rank that describes the data well produces a block-diagonal pattern once samples are grouped by identity: bright, near-1 blocks on the diagonal, dark, near-0 values everywhere off it. A rank that fits poorly blurs that pattern instead, with intermediate values connecting groups a better rank would keep apart. Cophenetic correlation is a single number that summarizes how block-like the matrix is. Looking at the matrix itself shows exactly which samples, if any, are the source of any blur.</p>
+<p>Averaging the consensus matrix within and between the three true groups (used here only to explain the diagnostic, not to choose <code>k</code>) makes this concrete for k=2 and k=3.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>groups <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"ALL-B-cell"</span>, <span class="st">"ALL-T-cell"</span>, <span class="st">"AML"</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>block_means <span class="ot">&lt;-</span> <span class="cf">function</span>(cs) {</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="at">dimnames =</span> <span class="fu">list</span>(groups, groups))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (g1 <span class="cf">in</span> groups) <span class="cf">for</span> (g2 <span class="cf">in</span> groups) m[g1, g2] <span class="ot">&lt;-</span> <span class="fu">mean</span>(cs[combo <span class="sc">==</span> g1, combo <span class="sc">==</span> g2])</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  m</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>cs2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">read.csv</span>(<span class="st">"data/golub_consensus_k2.csv"</span>))</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>cs3 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">read.csv</span>(<span class="st">"data/golub_consensus_k3.csv"</span>))</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">block_means</span>(cs2), <span class="dv">3</span>)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">block_means</span>(cs3), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>k = 2:
+           ALL-B-cell ALL-T-cell  AML
+ALL-B-cell      0.872       0.93 0.07
+ALL-T-cell      0.930       1.00 0.00
+AML             0.070       0.00 1.00
+
+k = 3:
+           ALL-B-cell ALL-T-cell AML
+ALL-B-cell      0.900      0.053   0
+ALL-T-cell      0.053      1.000   0
+AML             0.000      0.000   1</code></pre>
+</div>
+<div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"ALL-B-cell"</span>, <span class="st">"ALL-T-cell"</span>, <span class="st">"AML"</span>]</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_means(cs):</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> pd.DataFrame(index<span class="op">=</span>groups, columns<span class="op">=</span>groups, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> g1 <span class="kw">in</span> groups:</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> g2 <span class="kw">in</span> groups:</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>            m.loc[g1, g2] <span class="op">=</span> cs[np.ix_(combo <span class="op">==</span> g1, combo <span class="op">==</span> g2)].mean()</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> m</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>cs2 <span class="op">=</span> pd.read_csv(<span class="st">"data/golub_consensus_k2.csv"</span>).to_numpy()</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>cs3 <span class="op">=</span> pd.read_csv(<span class="st">"data/golub_consensus_k3.csv"</span>).to_numpy()</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(block_means(cs2).<span class="bu">round</span>(<span class="dv">3</span>))</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(block_means(cs3).<span class="bu">round</span>(<span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>k = 2:
+            ALL-B-cell  ALL-T-cell   AML
+ALL-B-cell       0.872        0.93  0.07
+ALL-T-cell       0.930        1.00  0.00
+AML              0.070        0.00  1.00
+
+k = 3:
+            ALL-B-cell  ALL-T-cell  AML
+ALL-B-cell       0.900       0.053  0.0
+ALL-T-cell       0.053       1.000  0.0
+AML              0.000       0.000  1.0</code></pre>
+</div>
+</div>
+</div>
+<p>At <code>k = 2</code>, B-cell and T-cell ALL samples land in the same component in 93% of runs on average. With only two components available, the survey has nowhere to put an ALL/AML split except by merging both ALL subtypes together, and it does so consistently, which is exactly why this still counts as a stable, high-cophenetic partition even though it is biologically coarser than <code>k = 3</code>. At <code>k = 3</code>, that same B-cell/T-cell cross-consensus falls to 5%: the extra component gives the two subtypes somewhere separate to go, and every run agrees on where. This is what the jump in cophenetic correlation from 0.9908 to 1.0000 actually reflects, not a marginally better number, but a qualitative change in which sample groupings are stable across restarts.</p>
+<p>Even at <code>k = 3</code> the picture is not perfectly clean: B-cell samples land together with each other in only 90% of runs, not 100%, so a handful of B-cell samples are occasionally pulled into a different component depending on the random start. This is the kind of detail a single cophenetic number cannot show but the matrix can: which group, if any, is less than fully resolved, and by how much.</p>
+</section>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-4.-fit-rank-3-and-inspect-the-sample-scores" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="exercise-4.-fit-rank-3-and-inspect-the-sample-scores"><span class="header-section-number">4.5</span> Exercise 4. Fit rank 3 and inspect the sample scores</h2>
+<p><strong>Task.</strong> Fit NMF at <code>k = 3</code> on the full 5,000-gene matrix in both R and Python. For each sample, find its dominant component (the column of <code>W</code> with the largest value). Cross-tabulate against the true ALL-B-cell / ALL-T-cell / AML label. Then check whether this “dominant component” assignment is trustworthy by examining the <em>scale</em> of each column of <code>W</code> before concluding anything.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Chapter 3 showed that <code>WD</code> and <code>D^{-1}H</code> reconstruct the data identically for any positive diagonal <code>D</code>. That means the raw magnitude of one column of <code>W</code> relative to another carries no information by itself. Look at <code>apply(W, 2, max)</code> (R) or <code>W.max(axis=0)</code> (Python) before trusting an <code>argmax</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-11" class="callout-11-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">nnmf</span>(X, <span class="at">k =</span> <span class="dv">3</span>, <span class="at">method =</span> <span class="st">"scd"</span>, <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="at">max.iter =</span> <span class="dv">2000</span>, <span class="at">rel.tol =</span> <span class="fl">1e-8</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">apply</span>(fit3<span class="sc">$</span>W, <span class="dv">2</span>, max)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>dominant3 <span class="ot">&lt;-</span> <span class="fu">apply</span>(fit3<span class="sc">$</span>W, <span class="dv">1</span>, which.max)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>combo <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(meta<span class="sc">$</span>ALL_AML <span class="sc">==</span> <span class="st">"AML"</span>, <span class="st">"AML"</span>, <span class="fu">paste0</span>(<span class="st">"ALL-"</span>, meta<span class="sc">$</span>cell_type))</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(dominant3, combo)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>[1] 78002.73 68476.09 86878.30
+
+         combo
+dominant3 ALL-B-cell ALL-T-cell AML
+        1          1          8   0
+        2         18          0   1
+        3          0          0  10</code></pre>
+</div>
+<div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> NMF</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>m3 <span class="op">=</span> NMF(n_components<span class="op">=</span><span class="dv">3</span>, init<span class="op">=</span><span class="st">"nndsvda"</span>, solver<span class="op">=</span><span class="st">"cd"</span>, beta_loss<span class="op">=</span><span class="st">"frobenius"</span>,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>          max_iter<span class="op">=</span><span class="dv">2000</span>, tol<span class="op">=</span><span class="fl">1e-6</span>, random_state<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>W3 <span class="op">=</span> m3.fit_transform(X)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>H3 <span class="op">=</span> m3.components_</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(W3.<span class="bu">max</span>(axis<span class="op">=</span><span class="dv">0</span>))</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>dominant_raw <span class="op">=</span> W3.argmax(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>combo <span class="op">=</span> (<span class="st">"ALL-"</span> <span class="op">+</span> meta[<span class="st">"cell_type"</span>].astype(<span class="bu">str</span>)).where(meta[<span class="st">"ALL_AML"</span>] <span class="op">!=</span> <span class="st">"AML"</span>, <span class="st">"AML"</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pd.crosstab(dominant_raw, combo))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>[83.47148671  0.47316324  2.58487588]
+
+col_0  ALL-B-cell  ALL-T-cell  AML
+row_0
+0               9           5   11
+1               0           3    0
+2              10           0    0</code></pre>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>The scale check matters here, concretely
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>R’s fit happened to land on three columns of <code>W</code> with roughly comparable maxima (about 78,000, 68,000, and 87,000), so its raw <code>argmax</code> gives a fairly clean three-way split. Python’s fit, from a different initialization, landed on three columns with wildly different maxima (about 83, 0.5, and 2.6, a roughly 170-fold spread). Its raw <code>argmax</code> is dominated by whichever column happens to carry the larger share of the arbitrary scaling factor, not by which component is genuinely strongest for each sample: one column absorbs 25 of the 38 samples as “dominant.”</p>
+<p>Neither fit is wrong. Both reconstruct <code>X</code> about equally well, and matching their <code>H</code> matrices by correlation (as in Chapter 2) confirms they learned essentially the same three components. The difference is purely the <code>WD</code>/<code>D^{-1}H</code> scaling ambiguity from Chapter 3, and it distorts a naive <code>argmax</code> far more severely on one of the two fits than the other, even though neither fit’s raw column scale was chosen on purpose.</p>
+</div>
+</div>
+<p>Normalizing each component to a common scale before taking the <code>argmax</code> (giving every row of <code>H</code> unit norm and moving the removed scale into the matching column of <code>W</code>) removes the artifact in both languages, R included:</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-6-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-1" role="tab" aria-controls="tabset-6-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-6-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-2" role="tab" aria-controls="tabset-6-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-6-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-6-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>normalize_wh <span class="ot">&lt;-</span> <span class="cf">function</span>(W, H) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  row_norm <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">rowSums</span>(H<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">W =</span> <span class="fu">sweep</span>(W, <span class="dv">2</span>, row_norm, <span class="st">"*"</span>), <span class="at">H =</span> H <span class="sc">/</span> row_norm)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>ari <span class="ot">&lt;-</span> <span class="cf">function</span>(a, b) {</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  tab <span class="ot">&lt;-</span> <span class="fu">table</span>(a, b)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">sum</span>(tab)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  sc <span class="ot">&lt;-</span> <span class="cf">function</span>(v) <span class="fu">sum</span>(<span class="fu">choose</span>(v, <span class="dv">2</span>))</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  index <span class="ot">&lt;-</span> <span class="fu">sc</span>(tab)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  expected <span class="ot">&lt;-</span> <span class="fu">sc</span>(<span class="fu">rowSums</span>(tab)) <span class="sc">*</span> <span class="fu">sc</span>(<span class="fu">colSums</span>(tab)) <span class="sc">/</span> <span class="fu">choose</span>(n, <span class="dv">2</span>)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  maximum <span class="ot">&lt;-</span> (<span class="fu">sc</span>(<span class="fu">rowSums</span>(tab)) <span class="sc">+</span> <span class="fu">sc</span>(<span class="fu">colSums</span>(tab))) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  (index <span class="sc">-</span> expected) <span class="sc">/</span> (maximum <span class="sc">-</span> expected)</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>normalized <span class="ot">&lt;-</span> <span class="fu">normalize_wh</span>(fit3<span class="sc">$</span>W, fit3<span class="sc">$</span>H)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>W3n <span class="ot">&lt;-</span> normalized<span class="sc">$</span>W</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>H3n <span class="ot">&lt;-</span> normalized<span class="sc">$</span>H</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>dominant_norm <span class="ot">&lt;-</span> <span class="fu">apply</span>(W3n, <span class="dv">1</span>, which.max)</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(dominant_norm, combo)</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"ARI, raw argmax:       "</span>, <span class="fu">round</span>(<span class="fu">ari</span>(dominant3, combo), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"ARI, normalized argmax:"</span>, <span class="fu">round</span>(<span class="fu">ari</span>(dominant_norm, combo), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>              combo
+dominant_norm ALL-B-cell ALL-T-cell AML
+            1          0          8   0
+            2         19          0   1
+            3          0          0  10
+
+ARI, raw argmax:        0.8333
+ARI, normalized argmax: 0.9113</code></pre>
+</div>
+<div id="tabset-6-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-6-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nmf_helpers <span class="im">import</span> normalize_wh</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> adjusted_rand_score</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>W3n, H3n <span class="op">=</span> normalize_wh(W3, H3)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>dominant_norm <span class="op">=</span> W3n.argmax(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pd.crosstab(dominant_norm, combo))</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ARI, raw argmax:       "</span>, <span class="bu">round</span>(adjusted_rand_score(combo, dominant_raw), <span class="dv">4</span>))</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"ARI, normalized argmax:"</span>, <span class="bu">round</span>(adjusted_rand_score(combo, dominant_norm), <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>col_0  ALL-B-cell  ALL-T-cell  AML
+row_0
+0               0           0   10
+1               0           8    0
+2              19           0    1
+
+ARI, raw argmax:        0.1327
+ARI, normalized argmax: 0.9113</code></pre>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-W-scale" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two heatmaps of the same 38 by 3 W matrix, samples grouped by true label. The left heatmap, raw W, shows one column much brighter than the other two across almost all samples. The right heatmap, normalized W, shows three columns with comparable dynamic range, each bright for a different block of samples matching the true labels.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-W-scale-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/22-golub-W-raw-vs-normalized.svg" class="img-fluid figure-img" alt="Two heatmaps of the same 38 by 3 W matrix, samples grouped by true label. The left heatmap, raw W, shows one column much brighter than the other two across almost all samples. The right heatmap, normalized W, shows three columns with comparable dynamic range, each bright for a different block of samples matching the true labels.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-W-scale-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.3: Raw W (left) is dominated by one column’s scale. W after normalizing away the scaling ambiguity (right) shows the same three groups R found directly.
+</figcaption>
+</figure>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-ari" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Left: a 3 by 3 heatmap of counts, with the largest values on its diagonal, showing each of the three normalized components mapping cleanly onto one of the three true labels. Right: a bar chart comparing Adjusted Rand Index for the raw argmax assignment, low, against the normalized argmax assignment, much higher.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-ari-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/24-golub-nmf-vs-labels.svg" class="img-fluid figure-img" alt="Left: a 3 by 3 heatmap of counts, with the largest values on its diagonal, showing each of the three normalized components mapping cleanly onto one of the three true labels. Right: a bar chart comparing Adjusted Rand Index for the raw argmax assignment, low, against the normalized argmax assignment, much higher.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-ari-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.4: Left: dominant component (normalized) against true label, as counts. Right: Adjusted Rand Index against the true label, before and after normalizing away the scaling ambiguity.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><a href="#fig-golub-ari" class="quarto-xref">Figure&nbsp;<span>4.4</span></a> makes the size of the effect hard to miss for Python: the raw argmax’s ARI of 0.13 is barely better than a random partition, while the normalized argmax’s ARI of 0.91 is a strong, near-complete recovery of the three true subtypes, from what is fundamentally the same fitted model. R’s raw argmax was never this badly corrupted (ARI 0.83, one B-cell and one AML sample landing on the wrong component), because its column scales happened to be closer together to begin with, but normalizing still improves it, and both languages land on the identical ARI of 0.9113 once normalized. <a href="#fig-golub-W-scale" class="quarto-xref">Figure&nbsp;<span>4.3</span></a> shows why, for Python’s case: the raw heatmap’s left panel is dominated by a single bright column regardless of sample identity, while the normalized right panel shows three columns each lighting up for a different, correct block of samples. <code>argmax(W)</code> is a convenient summary. It is not safe to use without first checking, or removing, the scaling ambiguity, in either language.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-5.-what-defines-each-component" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="exercise-5.-what-defines-each-component"><span class="header-section-number">4.6</span> Exercise 5. What defines each component</h2>
+<p><strong>Task.</strong> Using the normalized <code>H</code> from the previous exercise, list the top 8 genes for each of the three components.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-12-contents" aria-controls="callout-12" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-12" class="callout-12-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-7-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-1" role="tab" aria-controls="tabset-7-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-7-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-2" role="tab" aria-controls="tabset-7-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-7-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-7-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  top <span class="ot">&lt;-</span> <span class="fu">sort</span>(H3n[r, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"Component"</span>, r, <span class="st">":</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">round</span>(top, <span class="dv">3</span>))</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>Component 1 :
+X00437_s_at M25079_s_at   M12886_at   M13792_at   M16279_at X76223_s_at
+      0.251       0.240       0.219       0.202       0.162       0.161
+  U14603_at U23852_s_at
+      0.154       0.150
+Component 2 :
+     X00274_at    X57351_s_at    M25079_s_at    M13560_s_at Z84721_cds2_at
+         0.281          0.268          0.237          0.209          0.174
+     Y00433_at    L06797_s_at      M33680_at
+         0.146          0.141          0.130
+Component 3 :
+  M11147_at Y00787_s_at   M69043_at   Y00433_at   D64142_at   L19779_at
+      0.253       0.186       0.178       0.165       0.161       0.156
+V00594_s_at   L20941_at
+      0.153       0.150</code></pre>
+</div>
+<div id="tabset-7-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-7-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>):</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    top <span class="op">=</span> pd.Series(H3n[r], index<span class="op">=</span>expr.columns).sort_values(ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">8</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Component </span><span class="sc">{</span>r<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">:"</span>)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(top.<span class="bu">round</span>(<span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>Component 1:
+M11147_at      0.3
+Y00787_s_at    0.2
+M69043_at      0.2
+Y00433_at      0.2
+D64142_at      0.2
+L19779_at      0.2
+V00594_s_at    0.2
+L20941_at      0.1
+dtype: float64
+Component 2:
+X00437_s_at    0.3
+M25079_s_at    0.2
+M12886_at      0.2
+M13792_at      0.2
+M16279_at      0.2
+X76223_s_at    0.2
+U14603_at      0.2
+U23852_s_at    0.1
+dtype: float64
+Component 3:
+X00274_at         0.3
+X57351_s_at       0.3
+M25079_s_at       0.2
+M13560_s_at       0.2
+Z84721_cds2_at    0.2
+Y00433_at         0.1
+L06797_s_at       0.1
+M33680_at         0.1
+dtype: float64</code></pre>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-top-genes" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three horizontal bar charts, one per component, each listing eight Affymetrix probe identifiers ranked by their normalized H weight for that component.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-top-genes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/23-golub-top-genes.svg" class="img-fluid figure-img" alt="Three horizontal bar charts, one per component, each listing eight Affymetrix probe identifiers ranked by their normalized H weight for that component.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-top-genes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.5: Top 8 genes by normalized H weight, one panel per component.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>R’s “Component 1” here is T-cell ALL and Python’s “Component 1” is AML: the same permutation ambiguity from Chapter 3, not a disagreement. Matching by content, not by number, both languages find the same three gene sets, one per leukemia subtype.</p>
+<p>These are probe identifiers from the original Affymetrix HU6800 platform, not gene symbols, and a probe ID on its own says nothing biological. <code>data/golub_gene_symbols.csv</code> maps each probe to its gene symbol and name, generated once from Bioconductor’s <code>hu6800.db</code> annotation package (<code>scripts/annotate_golub_genes.R</code>). A few older probes match more than one gene symbol, joined below with <code>/</code>, and are shown as such rather than picking one arbitrarily.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-8-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-8-1" role="tab" aria-controls="tabset-8-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-8-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-8-2" role="tab" aria-controls="tabset-8-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-8-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-8-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>symbols <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data/golub_gene_symbols.csv"</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>annotate <span class="ot">&lt;-</span> <span class="cf">function</span>(ids) symbols<span class="sc">$</span>symbol[<span class="fu">match</span>(ids, symbols<span class="sc">$</span>feature_id)]</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  top <span class="ot">&lt;-</span> <span class="fu">sort</span>(H3n[r, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"Component"</span>, r, <span class="st">":</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">data.frame</span>(<span class="at">gene =</span> <span class="fu">annotate</span>(<span class="fu">names</span>(top)), <span class="at">weight =</span> <span class="fu">round</span>(top, <span class="dv">3</span>), <span class="at">row.names =</span> <span class="fu">names</span>(top)))</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>Component 1 :
+                                             gene weight
+X00437_s_at                          TRBV19/TRBC1  0.251
+M25079_s_at                               HBB/HBD  0.240
+M12886_at   TRBV7-2/TRBV6-5/TRBV5-4/TRBV3-1/TRBC2  0.219
+M13792_at                                     ADA  0.202
+M16279_at                                    CD99  0.162
+X76223_s_at                                   MAL  0.161
+U14603_at                                  PTP4A2  0.154
+U23852_s_at                                   LCK  0.150
+Component 2 :
+                        gene weight
+X00274_at            HLA-DRA  0.281
+X57351_s_at    IFITM2/IFITM3  0.268
+M25079_s_at          HBB/HBD  0.237
+M13560_s_at             CD74  0.209
+Z84721_cds2_at     HBA1/HBA2  0.174
+Y00433_at               GPX1  0.146
+L06797_s_at            CXCR4  0.141
+M33680_at               CD81  0.130
+Component 3 :
+                     gene weight
+M11147_at             FTL  0.253
+Y00787_s_at         CXCL8  0.186
+M69043_at          NFKBIA  0.178
+Y00433_at            GPX1  0.165
+D64142_at           H1-10  0.161
+L19779_at   H2AC18/H2AC19  0.156
+V00594_s_at          MT2A  0.153
+L20941_at            FTH1  0.150</code></pre>
+</div>
+<div id="tabset-8-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-8-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>symbols <span class="op">=</span> pd.read_csv(<span class="st">"data/golub_gene_symbols.csv"</span>).set_index(<span class="st">"feature_id"</span>)[<span class="st">"symbol"</span>]</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>):</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    top <span class="op">=</span> pd.Series(H3n[r], index<span class="op">=</span>expr.columns).sort_values(ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">8</span>)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Component </span><span class="sc">{</span>r<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">:"</span>)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(pd.DataFrame({<span class="st">"gene"</span>: symbols.reindex(top.index), <span class="st">"weight"</span>: top.<span class="bu">round</span>(<span class="dv">3</span>)}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>Component 1:
+                     gene  weight
+M11147_at             FTL   0.253
+Y00787_s_at         CXCL8   0.186
+M69043_at          NFKBIA   0.178
+Y00433_at            GPX1   0.165
+D64142_at           H1-10   0.161
+L19779_at   H2AC18/H2AC19   0.156
+V00594_s_at          MT2A   0.153
+L20941_at             FTH1   0.150
+Component 2:
+                                             gene  weight
+X00437_s_at                          TRBV19/TRBC1   0.251
+M25079_s_at                               HBB/HBD   0.240
+M12886_at   TRBV7-2/TRBV6-5/TRBV5-4/TRBV3-1/TRBC2   0.219
+M13792_at                                      ADA   0.202
+M16279_at                                     CD99   0.162
+X76223_s_at                                    MAL   0.161
+U14603_at                                  PTP4A2   0.154
+U23852_s_at                                    LCK   0.150
+Component 3:
+                        gene  weight
+X00274_at            HLA-DRA   0.281
+X57351_s_at    IFITM2/IFITM3   0.268
+M25079_s_at          HBB/HBD   0.238
+M13560_s_at             CD74   0.209
+Z84721_cds2_at     HBA1/HBA2   0.174
+Y00433_at               GPX1   0.146
+L06797_s_at            CXCR4   0.141
+M33680_at               CD81   0.130</code></pre>
+</div>
+</div>
+</div>
+<p>The T-cell component (R’s Component 1, Python’s Component 2) is defined almost entirely by T-cell receptor genes: <code>TRBV19</code>, <code>TRBC1</code>, and four more <code>TRBV</code>/<code>TRBC2</code> entries sharing a single cross-hybridizing probe, plus <code>LCK</code>, the Src-family kinase that sits at the start of T-cell receptor signaling, and <code>CD99</code> and <code>MAL</code>, both used as T-lymphocyte markers. This is about as specific a signature as this platform could produce for that cell type, and none of it was suggested to the model. NMF found it purely from covariation in expression.</p>
+<p>The B-cell component (R’s Component 2, Python’s Component 3) centers on antigen presentation: <code>HLA-DRA</code> and <code>CD74</code> together form the MHC class II machinery, and <code>CD81</code> is part of the B-cell receptor’s own coreceptor complex. This is a coherent, recognizable B-lymphocyte signature, distinct from the T-cell one above.</p>
+<p>The AML component (R’s Component 3, Python’s Component 1) is less crisply cell-type-specific. <code>FTL</code> and <code>FTH1</code>, ferritin’s light and heavy chains, are consistent with the iron-handling and elevated-ferritin phenotype long associated with myeloid leukemia, and <code>CXCL8</code>/<code>NFKBIA</code> point to active inflammatory signaling, but the histone genes (<code>H1-10</code>, <code>H2AC18</code>/<code>H2AC19</code>) reflect general proliferation rather than anything myeloid-specific. The component still separates AML samples cleanly (Exercise 4), but its defining genes describe a less tightly focused program than the two lymphoid components, a real difference between the three, not an artifact of the analysis.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="exercise-6.-visualizing-scores-and-loadings-together" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="exercise-6.-visualizing-scores-and-loadings-together"><span class="header-section-number">4.7</span> Exercise 6. Visualizing scores and loadings together</h2>
+<p><strong>Task.</strong> Using the normalized <code>W3n</code> and <code>H3n</code> from Exercise 4, make two plots on the same pair of components (say, the AML component and the B-cell component): a score plot of the 38 samples, and a loadings plot of the genes. What does each plot show that the other does not, and how do they relate to each other?</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A score plot places samples using their <code>W</code> coordinates. A loadings plot places features using their <code>H</code> coordinates. The two plots share axes, components, but never share points, samples on one, genes on the other, so they are read separately and then connected through the interpretation.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Component numbers differ by language, again
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>R’s fit put B-cell at component 2 and AML at component 3 (Exercise 4’s table). Python’s fit put AML at component 1 and B-cell at component 3 (0-indexed: columns 0 and 2). The R code below plots columns 2 and 3. The Python code plots columns 0 and 2. Both plot the same two biological programs, AML and B-cell, just under each language’s own column numbering.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-15-contents" aria-controls="callout-15" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-15" class="callout-15-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-9-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-9-1" role="tab" aria-controls="tabset-9-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-9-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-9-2" role="tab" aria-controls="tabset-9-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-9-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-9-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(W3n[, <span class="dv">3</span>], W3n[, <span class="dv">2</span>], <span class="at">col =</span> <span class="fu">factor</span>(combo), <span class="at">pch =</span> <span class="dv">19</span>,</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Normalized score, AML component"</span>,</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">"Normalized score, B-cell component"</span>)</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">levels</span>(<span class="fu">factor</span>(combo)), <span class="at">col =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-9-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-9-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">5.5</span>))</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> c <span class="kw">in</span> [<span class="st">"ALL-B-cell"</span>, <span class="st">"ALL-T-cell"</span>, <span class="st">"AML"</span>]:</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    sel <span class="op">=</span> combo <span class="op">==</span> c</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    ax.scatter(W3n[sel, <span class="dv">0</span>], W3n[sel, <span class="dv">2</span>], label<span class="op">=</span>c)</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Normalized score, AML component"</span>)</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Normalized score, B-cell component"</span>)</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>ax.legend()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-score-plot" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A scatter plot with AML samples far along the horizontal axis, ALL-B-cell samples far along the vertical axis, and ALL-T-cell samples clustered near the origin of both axes.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-score-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/28-golub-score-plot.svg" class="img-fluid figure-img" alt="A scatter plot with AML samples far along the horizontal axis, ALL-B-cell samples far along the vertical axis, and ALL-T-cell samples clustered near the origin of both axes.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-score-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.6: Samples placed by their normalized scores on the AML and B-cell components.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>AML samples sit far along the horizontal axis, B-cell samples sit far up the vertical axis, and T-cell samples cluster near the origin of <em>both</em> axes, exactly as a sample scoring high only on some third, unplotted component should: low on these two components does not mean low overall, only unplotted here.</p>
+<p>The loadings plot uses the same two components, but plots genes instead of samples, and highlights the top 8 genes for each.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-10-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-1" role="tab" aria-controls="tabset-10-1" aria-selected="true" href="">R</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-10-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-2" role="tab" aria-controls="tabset-10-2" aria-selected="false" href="">Python</a></li></ul>
+<div class="tab-content">
+<div id="tabset-10-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-10-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>top_aml <span class="ot">&lt;-</span> <span class="fu">sort</span>(H3n[<span class="dv">3</span>, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>top_bcell <span class="ot">&lt;-</span> <span class="fu">sort</span>(H3n[<span class="dv">2</span>, ], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">intersect</span>(<span class="fu">names</span>(top_aml), <span class="fu">names</span>(top_bcell))</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(H3n[<span class="dv">3</span>, ], H3n[<span class="dv">2</span>, ], <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> <span class="st">"grey70"</span>, <span class="at">cex =</span> <span class="fl">0.5</span>,</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"H weight, AML component"</span>, <span class="at">ylab =</span> <span class="st">"H weight, B-cell component"</span>)</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(H3n[<span class="dv">3</span>, <span class="fu">names</span>(top_aml)], H3n[<span class="dv">2</span>, <span class="fu">names</span>(top_aml)], <span class="at">col =</span> <span class="st">"firebrick"</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(H3n[<span class="dv">3</span>, <span class="fu">names</span>(top_bcell)], H3n[<span class="dv">2</span>, <span class="fu">names</span>(top_bcell)], <span class="at">col =</span> <span class="st">"steelblue"</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>[1] "Y00433_at"</code></pre>
+</div>
+<div id="tabset-10-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-10-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>top_aml <span class="op">=</span> pd.Series(H3n[<span class="dv">0</span>], index<span class="op">=</span>expr.columns).sort_values(ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">8</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>top_bcell <span class="op">=</span> pd.Series(H3n[<span class="dv">2</span>], index<span class="op">=</span>expr.columns).sort_values(ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">8</span>)</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(top_aml.index.intersection(top_bcell.index).tolist())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>['Y00433_at']</code></pre>
+</div>
+</div>
+</div>
+<div class="visual-card">
+<div id="fig-golub-loadings-plot" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A scatter plot of all 5,000 genes as a grey cloud near the origin, with eight genes highlighted along the horizontal axis, the AML component's top genes, eight more highlighted along the vertical axis, the B-cell component's top genes, a faint diagonal reference line, and one gene labelled near the middle where both highlighted groups nearly meet.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-golub-loadings-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/29-golub-loadings-plot.svg" class="img-fluid figure-img" alt="A scatter plot of all 5,000 genes as a grey cloud near the origin, with eight genes highlighted along the horizontal axis, the AML component's top genes, eight more highlighted along the vertical axis, the B-cell component's top genes, a faint diagonal reference line, and one gene labelled near the middle where both highlighted groups nearly meet.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-golub-loadings-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.7: Every gene placed by its loading on the AML and B-cell components, with the top 8 genes for each component highlighted.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Most genes sit close to the origin on both axes: they carry little weight on either component and play no role in telling AML apart from B-cell ALL. The two highlighted groups sit away from the diagonal and close to their own axis, which is what makes them useful for defining a component in the first place. The one gene appearing in both top-8 lists, in both languages independently, is <code>Y00433_at</code> (<code>GPX1</code>, glutathione peroxidase, already identified in Exercise 5): a real instance of the “Gene B” pattern from Chapter 1, a feature with high weight in more than one component, contributing to the reconstruction without helping to distinguish the two groups it happens to sit between.</p>
+<p>Read together, the two plots answer complementary questions. The score plot says which samples express which programs. The loadings plot says which genes define those programs, and how cleanly. Neither plot alone gives the complete picture: a component is only as interpretable as the genes that define it, and a gene’s relevance is only visible once it is placed in the context of the samples that carry it.</p>
+</div>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./mathematics.html" class="pagination-link" aria-label="The mathematics of NMF">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The mathematics of NMF</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
